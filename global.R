@@ -22,23 +22,25 @@ library(dplyr)
 
 #change in global
 
-token <- readRDS("./Data/droptoken.rds")
-get_data_df <- drop_read_csv("CPHD/get_data_df.csv", dtoken = token)
-get_data_df %>% mutate_if(is.factor, as.character) -> get_data_df
-# unique(get_data_df$gram_sansad_name)
+  
+  token <- readRDS("./Data/droptoken.rds")
+  get_data_df <- drop_read_csv("CPHD/get_data_df.csv", dtoken = token)
+  get_data_df %>% mutate_if(is.factor, as.character) -> get_data_df
+  # unique(get_data_df$gram_sansad_name)
 
-set_config( config( ssl_verifypeer = 0L ))
-get_data <- GET("https://spreadcreativity.org/master_pri/master_pri_data.php")
-get_data_text <- content(get_data, "text")
-get_data_json <- fromJSON(get_data_text, flatten = TRUE)
-get_data_df_new <- as.data.frame(get_data_json[["indicatordata"]])
+
+  set_config( config( ssl_verifypeer = 0L ))
+  get_data <- GET("https://spreadcreativity.org/master_pri/master_pri_data.php")
+  get_data_text <- content(get_data, "text")
+  get_data_json <- fromJSON(get_data_text, flatten = TRUE)
+  get_data_df_new <- as.data.frame(get_data_json[["indicatordata"]])
 
 
 # tryCatch({
 
 if (nrow(get_data_df_new) > nrow(get_data_df))
 {
-  print("hello I am here1")
+  # print("hello I am here1")
   tryCatch({
   drop_delete("get_data_df.csv", path = "CPHD", dtoken = token)
   }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})

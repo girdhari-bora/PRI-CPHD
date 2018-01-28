@@ -65,9 +65,8 @@ shinyServer(function(input,session, output) {
     
     
     get_data_df_temp <- get_data_df[get_data_df$block_parishad_name %in% input$block_parishad &
-                                 get_data_df$gram_parishad_name %in% input$gram_panchayat 
-                                 # &
-                                 # get_data_df$gram_sansad_name %in% input$gram_sansad
+                                 get_data_df$gram_parishad_name %in% input$gram_panchayat &
+                                  get_data_df$gram_sansad_name %in% input$gram_sansad
                                  ,]
     # print(get_data_df_temp)
     
@@ -76,7 +75,7 @@ shinyServer(function(input,session, output) {
     #   mutate(year_month_date = as.Date(paste(matrix(unlist(strsplit(get_data_df_temp$year, "-")),ncol=2, byrow = TRUE)[,1],
     #                                          month,"01",sep = "-")))
     
-    get_data_df_temp_final <- get_data_df %>%
+    get_data_df_temp_final <- get_data_df_temp %>%
       mutate(year_month_date = ifelse( month >3 , paste(matrix(unlist(strsplit(get_data_df$year, "-")),ncol=2, byrow = TRUE)[,1],
                                                         month,"01",sep = "-")
                                        , paste(as.integer(matrix(unlist(strsplit(get_data_df$year, "-")),ncol=2, byrow = TRUE)[,1])+1,
