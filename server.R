@@ -1,80 +1,153 @@
-
+library(DT)
 library(shiny)
 library(shinydashboard)
 library(dplyr)
 library(shiny)
 library(collapsibleTree)
+library(shinyBS)
+library(shinyjs)
+library(highcharter)
+library(shiny)
+library(shinydashboard)
+library(dplyr)
+library(RColorBrewer)
+library(dygraphs)
+library(xts)
+library(highcharter)
+library(dplyr)
+library(DT)
+library(data.table)
+library(shinyjs)
+library(htmltools)
+library(apputils)
+library(collapsibleTree)
+library(data.table)
+library(dplyr)
+require("httr")
+require("jsonlite")
+library(httr)
+library(rdrop2)
+library(dplyr)
+
+
+# This function will create the buttons for the datatable, they will be unique
+shinyInput <- function(FUN, len, id, ...) {inputs <- character(len)
+for (i in seq_len(len)) {
+  inputs[i] <- as.character(FUN(paste0(id, i), ...))}
+inputs
+}
 
 
 shinyServer(function(input,session, output) {
 
-  observeEvent(
+  
+# observe({
+#     if ("Select All" %in% input$block_parishad) {
+#       # choose all the choices _except_ "Select All"
+#       selected_choices <- setdiff(choices_block , "Select All")
+#       updateSelectInput(session, "block_parishad", selected = selected_choices)
+#     }
+#   })  
+  
+  
+observeEvent(
       input$block_parishad, {
       # Update based on the year change event
-      updateSelectizeInput(session, "gram_panchayat", "Gram Panchayat", 
-                        choices = unique(get_data_df$gram_parishad_name[get_data_df$block_parishad_name %in% input$block_parishad]),
-                        selected = unique(get_data_df$gram_parishad_name[get_data_df$block_parishad_name %in% input$block_parishad])
+        if ("Select All" %in% input$block_parishad) {
+         
+          updateSelectInput(session, "gram_panchayat", "Gram Panchayat", 
+                        choices = c("Select All",
+                                    unique(get_data_df$gram_parishad_name[get_data_df$block_parishad_name %in% setdiff(choices_block, "Select All")]))
+                        ,selected = "Select All"
                         )
-      #  print( "#############1111111111###################")
-      # # # print(unique(get_data_df$gram_parishad_name[get_data_df$block_parishad_name %in% input$block_parishad]))
-      #  print(input$block_parishad)
-      #  print(input$gram_panchayat)
-      #  print(input$gram_sansad)
-  })   
+        } else {
+          updateSelectInput(session, "gram_panchayat", "Gram Panchayat", 
+                            choices = c("Select All",unique(get_data_df$gram_parishad_name[get_data_df$block_parishad_name %in% input$block_parishad]))
+                            ,selected = NULL 
+                              
+          )
+          
+        }
+
+})   
   
   
-  observeEvent(
+observeEvent(
       input$gram_panchayat,{
       # Update based on the year change event
-      updateSelectizeInput(session, "gram_sansad", "Gram Sansad", 
-                        choices = unique(get_data_df$gram_sansad_name[get_data_df$gram_parishad_name %in% input$gram_panchayat]),
-                        selected = unique(get_data_df$gram_sansad_name[get_data_df$gram_parishad_name %in% input$gram_panchayat])
-                        )
-     
-      #  print( "################22222222##################") 
-      # # # print(unique(get_data_df$gram_sansad_name[get_data_df$gram_parishad_name %in% input$gram_panchayat]))
-      #  print(input$block_parishad)
-      #  print(input$gram_panchayat)
-      #  print(input$gram_sansad)
-       
-      # 
-      # print(is.null(input$block_parishad))
-      # print(is.null(input$gram_panchayat))
-      # print(is.null(input$gram_sansad))
-      
-     
-    })  
+        if ("Select All" %in% input$gram_panchayat) {
+        
+            updateSelectInput(session, "gram_sansad", "Gram Sansad", 
+                            choices = c("Select All",
+                              unique(get_data_df$gram_sansad_name[get_data_df$gram_parishad_name %in% setdiff(choices_panchayat,"Select All")]))
+                            ,selected = "Select All"
+          )}else{
+          
+          updateSelectInput(session, "gram_sansad", "Gram Sansad", 
+                            choices = c("Select All", unique(get_data_df$gram_sansad_name[get_data_df$gram_parishad_name %in% input$gram_panchayat]))
+                            ,selected = NULL
+          )}
   
-  observeEvent(input$gram_sansad, {
-    # print("DUMMYYYYYYYYYYYYYYYYYYYYYY")
-    # print(input$gram_sansad)
+})  
+  
+observeEvent(input$gram_sansad, {
+    # ####print("DUMMYYYYYYYYYYYYYYYYYYYYYY")
+    # ####print(input$gram_sansad)
   })
   
   
-  
-  
-  datasetInput <- reactive({
+datasetInput <- reactive({
+    
     # validate(
     #   need(nrow(datasetInput())>0), "Please select one or more Block Parishad!"
     #   )
 
-    # print( "################333333333##################") 
-    # print(input$block_parishad)
-    # print(input$gram_panchayat)
-    # print(input$gram_sansad)
+    # ####print( "################333333333##################") 
+    # ####print(input$block_parishad)
+    # ####print(input$gram_panchayat)
+    # ####print(input$gram_sansad)
+    
+    get_data_df[,8:59] <- sapply(get_data_df[,8:59],as.integer)
+    
+    # ####print("this is first print")
+    # ####print(str(get_data_df))
+    
+    # print("####################### IN DATASETINPUT ##############################")
+    
+    if ("Select All" %in% input$block_parishad) {
+          selected_block <- setdiff(choices_block , "Select All")
+    } else{
+      selected_block <- input$block_parishad
+    }
+    # print(selected_block)
     
     
-    get_data_df_temp <- get_data_df[get_data_df$block_parishad_name %in% input$block_parishad &
-                                 get_data_df$gram_parishad_name %in% input$gram_panchayat &
-                                  get_data_df$gram_sansad_name %in% input$gram_sansad
+    if ("Select All" %in% input$gram_panchayat) {
+      selected_gp <- setdiff(choices_panchayat , "Select All")
+    } else{
+      selected_gp <- input$gram_panchayat
+    }
+    # print(selected_gp)
+    
+    
+    if ("Select All" %in% input$gram_sansad) {
+      selected_gs <- setdiff(choices_sansad , "Select All")
+    }else{
+      selected_gs <- input$gram_sansad
+    }
+    # print(selected_gs)
+    
+    
+    get_data_df_temp <- get_data_df[get_data_df$block_parishad_name %in% selected_block &
+                                 get_data_df$gram_parishad_name %in% selected_gp &
+                                 get_data_df$gram_sansad_name %in% selected_gs
                                  ,]
-    # print(get_data_df_temp)
     
-    ## PREVIOUS CODE without considering 2018 in 2017-18
+    # ####print(get_data_df_temp)
+    # PREVIOUS CODE without considering 2018 in 2017-18
     # get_data_df_temp_final <- get_data_df_temp %>%
     #   mutate(year_month_date = as.Date(paste(matrix(unlist(strsplit(get_data_df_temp$year, "-")),ncol=2, byrow = TRUE)[,1],
     #                                          month,"01",sep = "-")))
-    
     get_data_df_temp_final <- get_data_df_temp %>%
       mutate(year_month_date = ifelse( month >3 , paste(matrix(unlist(strsplit(get_data_df$year, "-")),ncol=2, byrow = TRUE)[,1],
                                                         month,"01",sep = "-")
@@ -82,16 +155,131 @@ shinyServer(function(input,session, output) {
                                                month,"01",sep = "-"))
       )
     
-   
-    return(filter(get_data_df_temp_final, 
+   return(filter(get_data_df_temp_final, 
                   get_data_df_temp_final$year_month_date >= input$monthRange[1],
                   get_data_df_temp_final$year_month_date <= input$monthRange[2]))
   })
   
-  
-  getIndVal <- reactive({
-    
+
+getIndGS <- reactive({
+
+    # print ("Hello in getIndGS()")
     get_data_df <- datasetInput()
+
+    # ####print(str(get_data_df))
+
+    get_data_df[,8:59] <- sapply(get_data_df[,8:59],as.integer)
+    # Indicators_PRI <- indicators_master
+
+    get_data_df_gs_ind <-
+      mutate(get_data_df,
+
+    i1 =   round((get_data_df$i1_add/get_data_df$i2_add),digits = 0),
+    i2 =   round((get_data_df$i3_add/get_data_df$i1_add)*100  ,digits = 0),
+    i3 =   round((  get_data_df$i4_add/get_data_df$i1_add)*100  ,digits = 0) ,
+    i4 =   round(get_data_df$i5_add, digits = 0),
+    i5 =   round((  get_data_df$i6_add/get_data_df$i5_add)*100  ,digits = 0),
+    i6 =   round((  get_data_df$i7_add/get_data_df$i8_add)*100  ,digits = 0),
+    i7 =   round((  get_data_df$i9_add/get_data_df$i8_add)*100  ,digits = 0) ,
+    i8 =   round((  get_data_df$i10_add/get_data_df$i8_add)*100  ,digits = 0) ,
+    i9 =   round((  get_data_df$i11_add/(get_data_df$i8_add-get_data_df$i10_add))*100  ,digits = 0)
+    ,i10 = round((  get_data_df$i12_add/get_data_df$i3_add)*100  ,digits = 0)
+    ,i11 = round((  get_data_df$i13_add/get_data_df$i1_add)*100  ,digits = 0)
+    ,i12 = round((  get_data_df$i14_add/get_data_df$i1_add)*100  ,digits = 0)
+    ,i13 = round((  get_data_df$i15_add/get_data_df$i3_add)*100  ,digits = 0)
+    ,i14 = round((  get_data_df$i16_add/get_data_df$i4_add)*100  ,digits = 0)
+    ,i15 = round(get_data_df$i17_add  ,digits = 0)
+
+    #Child Development
+    ,i16 = round((  get_data_df$i18_add/get_data_df$i4_add)*100  ,digits = 0)
+    # Indicators_PRI$Value[17] =   round((  get_data_df$i19_add/get_data_df$i8_add)*100  ,digits = 0)
+    ,i18 =   round((  get_data_df$i20_add/get_data_df$i1_add)*100  ,digits = 0)
+    ,i19 =   round((  get_data_df$i21_add/get_data_df$i4_add)*100  ,digits = 0)
+    ,i20 =   round((  get_data_df$i22_add/get_data_df$i4_add)*100  ,digits = 0)
+    ,i21 =   round((  get_data_df$i23_add/get_data_df$i22_add)*100  ,digits = 0)
+
+    #Panchayat and Rural Development
+    ,i23 =   round((  get_data_df$i25_add/get_data_df$i2_add)*100  ,digits = 0)
+    ,i24 =   round((  get_data_df$i26_add/get_data_df$i2_add)*100  ,digits = 0)
+    ,i25 =   round((  get_data_df$i27_add/get_data_df$i2_add)*100  ,digits = 0)
+    ,i26 =   round((  get_data_df$i28_add/get_data_df$i2_add)*100  ,digits = 0)
+    ,i27 =   round((  (get_data_df$i2_add- (get_data_df$i25_add +
+                                                                    get_data_df$i26_add +
+                                                                    get_data_df$i27_add +
+                                                                    get_data_df$i28_add ))/
+                                              get_data_df$i2_add)*100  ,digits = 0)
+
+    ,i29 =   round((  get_data_df$i30_add/get_data_df$i2_add)*100  ,digits = 0)
+    ,i30 =   round((  get_data_df$i31_add/get_data_df$i2_add)*100  ,digits = 0)
+    ,i31 =   round((  get_data_df$i32_add/get_data_df$i2_add)*100  ,digits = 0)
+    ,i32 =   round((  (get_data_df$i2_add- (get_data_df$i30_add +
+                                                                    get_data_df$i31_add +
+                                                                    get_data_df$i32_add
+    ))/
+      get_data_df$i2_add)*100  ,digits = 0)
+
+    ,i33 =   round((  get_data_df$i33_add/get_data_df$i2_add)*100  ,digits = 0)
+    ,i34 =   round((  get_data_df$i34_add/get_data_df$i2_add)*100  ,digits = 0)
+    ,i35 =   round((  get_data_df$i35_add/get_data_df$i2_add)*100  ,digits = 0)
+
+    # Indicators_PRI$Value[17] =   round((  get_data_df$i19_add/get_data_df$i8_add)*100  ,digits = 0)
+    ,i36 =   round((  get_data_df$i37_add/get_data_df$i36_add)*100  ,digits = 0)
+    ,i37 =   round((  get_data_df$i38_add/get_data_df$i36_add)*100  ,digits = 0)
+
+    ,i38 =   round((  get_data_df$i39_add/get_data_df$i2_add)*100  ,digits = 0)
+    ,i39 =   round((  get_data_df$i40_add/get_data_df$i2_add)*100  ,digits = 0)
+    ,i40 =   round((  get_data_df$i41_add/get_data_df$i2_add)*100  ,digits = 0)
+    ,i41 =   round((  get_data_df$i42_add/get_data_df$i2_add)*100  ,digits = 0)
+    ,i42 =   round((  get_data_df$i43_add/get_data_df$i2_add)*100  ,digits = 0)
+    ,i43 =   round((  (get_data_df$i2_add- (  get_data_df$i39_add +
+                                                                      get_data_df$i40_add +
+                                                                      get_data_df$i41_add +
+                                                                      get_data_df$i42_add +
+                                                                      get_data_df$i43_add
+    ))/
+      get_data_df$i2_add)*100  ,digits = 0)
+
+    # ,denominator_45_to_52 = (get_data_df$i45_add + get_data_df$i46_add + get_data_df$i47_add + get_data_df$i48_add + get_data_df$i49_add
+    #                          + get_data_df$i50_add + get_data_df$i51_add + get_data_df$i52_add)
+
+    ,i45 =   round((  get_data_df$i45_add/(get_data_df$i45_add + get_data_df$i46_add + get_data_df$i47_add + get_data_df$i48_add + get_data_df$i49_add
+                                                                      + get_data_df$i50_add + get_data_df$i51_add + get_data_df$i52_add))*100  ,digits = 0)
+    ,i46 =   round((  get_data_df$i46_add/(get_data_df$i45_add + get_data_df$i46_add + get_data_df$i47_add + get_data_df$i48_add + get_data_df$i49_add
+                                                                      + get_data_df$i50_add + get_data_df$i51_add + get_data_df$i52_add))*100  ,digits = 0)
+    ,i47 =   round((  get_data_df$i47_add/(get_data_df$i45_add + get_data_df$i46_add + get_data_df$i47_add + get_data_df$i48_add + get_data_df$i49_add
+                                                                      + get_data_df$i50_add + get_data_df$i51_add + get_data_df$i52_add))*100  ,digits = 0)
+    ,i48 =   round((  get_data_df$i48_add/(get_data_df$i45_add + get_data_df$i46_add + get_data_df$i47_add + get_data_df$i48_add + get_data_df$i49_add
+                                                                      + get_data_df$i50_add + get_data_df$i51_add + get_data_df$i52_add))*100  ,digits = 0)
+    ,i49 =   round((  get_data_df$i49_add/(get_data_df$i45_add + get_data_df$i46_add + get_data_df$i47_add + get_data_df$i48_add + get_data_df$i49_add
+                                                                      + get_data_df$i50_add + get_data_df$i51_add + get_data_df$i52_add))*100  ,digits = 0)
+    ,i50 =   round((  get_data_df$i50_add/(get_data_df$i45_add + get_data_df$i46_add + get_data_df$i47_add + get_data_df$i48_add + get_data_df$i49_add
+                                                                      + get_data_df$i50_add + get_data_df$i51_add + get_data_df$i52_add))*100  ,digits = 0)
+    ,i51 =   round((  get_data_df$i51_add/(get_data_df$i45_add + get_data_df$i46_add + get_data_df$i47_add + get_data_df$i48_add + get_data_df$i49_add
+                                                                      + get_data_df$i50_add + get_data_df$i51_add + get_data_df$i52_add))*100  ,digits = 0)
+    ,i52 =   round((  get_data_df$i52_add/(get_data_df$i45_add + get_data_df$i46_add + get_data_df$i47_add + get_data_df$i48_add + get_data_df$i49_add
+                                                                      + get_data_df$i50_add + get_data_df$i51_add + get_data_df$i52_add))*100  ,digits = 0)
+
+    )
+
+
+    ####print("Hello I am at end of getIndGS")
+
+    # testdata <- Indicators_PRI
+
+    # print(get_data_df_gs_ind)
+
+    return(get_data_df_gs_ind)
+
+
+  })
+  
+  
+getIndVal <- reactive({
+    
+    # print ("Hello in getIndVal()")
+    get_data_df <- datasetInput()
+    
+    # ####print(str(get_data_df))
     
     Indicators_PRI <- indicators_master
     
@@ -172,28 +360,50 @@ shinyServer(function(input,session, output) {
     Indicators_PRI$Value[51] <- round(mean((get_data_df$i51_add/denominator_45_to_52)*100, na.rm = TRUE),digits = 0)
     Indicators_PRI$Value[52] <- round(mean((get_data_df$i52_add/denominator_45_to_52)*100, na.rm = TRUE),digits = 0)
     
-    # print(Indicators_PRI)
-    return(Indicators_PRI)
+    # ####print(Indicators_PRI)
+    # return(Indicators_PRI)
     
-  })  
+    # ####print("Hello I am at end of getIndVal()")
+    
+    testdata <- Indicators_PRI 
+    
+    # ####print(head(testdata))
+    
+    df_with_button <- 
+    #   as.data.frame
+    # (
+      cbind(
+      View = shinyInput(actionButton, nrow(testdata),'button_', label = "View", onclick = 'Shiny.onInputChange(\"select_button\",  this.id)' ),
+      testdata)
+      # )
+    
+    # df_with_button[23:27,1] <- ""
+    # df_with_button[29:32,1] <- ""
+    # df_with_button[38:43,1] <- ""
+    # df_with_button[45:52,1] <- ""
+    
+    
+    ####print(str(df_with_button))
+    
+    return(df_with_button)
+    
+    
+})  
   
   
   
   
 ############################################ TABLE START ######################################  
-  
- 
-  
-  
-  
-  sketch1 <- htmltools::withTags(table(
+sketch1 <- htmltools::withTags(table(
     class = "display",
     style = "bootstrap",
-    tableHeader(c("S.No", "ID","Indicator", "Value"))
+    tableHeader(c(
+      # "Graph", 
+      "ID","Indicator","Unit","Value"))
     # tableFooter(c("", c("","","","")))
   ))
   
-  opts1 <- list( 
+opts1 <- list( 
     # footerCallback = JS(
     #   "function( tfoot, data, start, end, display ) {",
     #   "var api = this.api();",
@@ -230,1204 +440,1839 @@ shinyServer(function(input,session, output) {
   
   
   
-  output$health_family_welfare = DT::renderDataTable( 
+output$health_family_welfare = DT::renderDataTable( 
     
-    # print("Data set input")
+    # ####print("Data set input")
     # 
-    # print(datasetInput())
+    # ####print(datasetInput())
     
-    DT::datatable(getIndVal() %>% filter(Category == "Health and Family Welfare") %>% select(S_No,Indicator,Value)
+    DT::datatable(getIndVal()
+                   
+                  %>% filter(Category == "Health and Family Welfare") 
+                  %>% 
+                  select(
+                    # View,
+                    S_No,Indicator,Unit,Value)
                  , container = sketch1, options = opts1, selection = 'single',
                   class = 'cell-border stripe',
                   caption = 'Table 1: Health and Family Welfare Indicators.',
-                  extensions = 'Buttons'
+                  extensions = 'Buttons',escape = FALSE,rownames= FALSE
                   
                   # filter = 'top'
     ) %>%
-    formatStyle('Value',  color = 'black', backgroundColor = '#ffff73', fontWeight = 'bold',`font-size` = '18px') %>%
+    formatStyle('Value',  color = 'black', backgroundColor = '#fffdd5', fontWeight = 'bold',`font-size` = '18px') %>%
       formatStyle('Indicator',  color = 'black', `font-size` = '14px')
     
     )
   
-  output$child_development = DT::renderDataTable( 
+  # Here I created a reactive to save which row was clicked which can be stored for further analysis
+SelectedRow <- eventReactive(input$select_button,{
+    as.numeric(strsplit(input$select_button, "_")[[1]][2])
+  })
+# 
+#   # This is needed so that the button is clicked once for modal to show, a bug reported here
+#   # https://github.com/ebailey78/shinyBS/issues/57
+observeEvent(input$select_button, {
+ 
+  #change in global
+  # token <- readRDS("./Data/droptoken.rds")
+  # get_data_df <- drop_read_csv("CPHD/get_data_df.csv", dtoken = token)
+  # get_data_df %>% mutate_if(is.factor, as.character) -> get_data_df
+  # unique(get_data_df$gram_sansad_name)
+  
+  
+  set_config( config( ssl_verifypeer = 0L ))
+  get_data <- GET("https://spreadcreativity.org/master_pri/master_pri_data.php")
+  get_data_text <- content(get_data, "text")
+  get_data_json <- fromJSON(get_data_text, flatten = TRUE)
+  get_data_df_new <- as.data.frame(get_data_json[["indicatordata"]])
+  get_data_df_new %>% mutate_if(is.factor, as.character) -> get_data_df
+  
+  # tryCatch({
+  # 
+  # if (nrow(get_data_df_new) > nrow(get_data_df))
+  # {
+  #   # print("hello I am here1")
+  #   tryCatch({
+  #   drop_delete("get_data_df.csv", path = "CPHD", dtoken = token)
+  #   }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+  #   # write.csv(data, fileName, row.names = TRUE, quote = TRUE)
+  # 
+  # write.csv(get_data_df_new, "get_data_df.csv")
+  #   drop_upload("get_data_df.csv", path = "CPHD", dtoken = token)
+  
+  get_data_df <- get_data_df_new
+  
+  #   print("hello I am here2")  
+  # }
+  
+  # }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")}) 
+  
+  
+  # get_data_df <- read.csv("./Data/get_data_df.csv", 
+  #                        header = TRUE, stringsAsFactors = FALSE ,check.names = TRUE)
+  indicators_master <- read.csv("./Data/Indicators PRI.csv", 
+                                header = TRUE, stringsAsFactors = FALSE ,check.names = TRUE)
+  
+  choices_block <- c(unique(get_data_df$block_parishad_name))
+  choices_panchayat <- c("Select All", unique(get_data_df$gram_parishad_name))
+  choices_sansad <- c("Select All", unique(get_data_df$gram_sansad_name))
+  
+  get_data_df$month <- as.integer(get_data_df$month)
+  
+  
+  get_data_df_final <- get_data_df %>% 
+    mutate(year_month_date = ifelse( month>3 , paste(matrix(unlist(strsplit(get_data_df$year, "-")),ncol=2, byrow = TRUE)[,1],
+                                                     month,"01",sep = "-")
+                                     , paste(as.integer(matrix(unlist(strsplit(get_data_df$year, "-")),ncol=2, byrow = TRUE)[,1])+1,
+                                             month,"01",sep = "-"))
+    )
+  
+  series_list_gp <<- vector("list",0)
+  
+     ####print("in BUTTON")
+     df_ind <- getIndGS()
+     ####print("selectrow index number")
+     ####print(SelectedRow())
+     
+     # str(df_ind)
+     # df1 <- df_ind
+     # head(df_ind)
+     # block_df_ind <- setNames(data.frame(matrix(ncol = 2, nrow = 0)), c("block", "ind_value"))
+     # block_df_ind$block <-  sort(unique(getIndGS()[]$block_parishad_name))
+     # ind_name <- paste("i",SelectedRow(),sep = "")
+     # ####print("INDICATOR NAME")
+     # ####print(ind_name)
+     # ####print(str(df_ind))
+     # # ####print(class(df_ind$paste("i",SelectedRow(),sep = "")))
+     # by_block <- df_ind %>% group_by_(.dots = list('block_parishad_name')) 
+     #                        %>% summarise_(.dots = setNames(mean(ind_name, na.rm = TRUE), block_ind_val))    
+     # ####print(head(by_block))  
+     # ####print(by_block)
+     
+     ind_name <- paste("mean","(","i",SelectedRow(),",","na.rm=TRUE",")",sep = "")
+     
+     ind_name_gs <- paste0("i",SelectedRow())
+     summ_name <- paste0('mean_', "i",SelectedRow())
+     
+     # FOR BLOCK LEVEL GRAPH
+     by_block <- 
+       df_ind %>% group_by(block_parishad_name)%>% 
+       summarise_(.dots = setNames(ind_name, summ_name))
+     by_block <- by_block[complete.cases(by_block), ]
+     # ####print("by_BLOBCKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK")
+     # ####print(by_block)
+     colnames(by_block)<- c("name","y")
+     by_block$y <- as.integer(by_block$y )
+     
+     by_block$drilldown <- tolower(paste(substr(by_block$name,1,4),'id',sep = "_"))
+     block_df_ind <<- as.data.frame(by_block)
+     ####print("BLOCK DF")
+     ####print(str(block_df_ind))
+     
+    # FOR GP LEVEL GRAPH
+     by_gp <- 
+       df_ind %>% group_by(block_parishad_name, gram_parishad_name)%>% 
+       summarise_(.dots = setNames(ind_name, summ_name))
+     
+     by_gp <- by_gp[complete.cases(by_gp), ]
+     colnames(by_gp)<- c("block_parishad_name","gram_parishad_name","value")
+     by_gp$drilldown <- tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_")) 
+     by_gp$block <- tolower(paste(substr(by_gp$block_parishad_name,1,4),'id',sep = "_"))
+     gp_df_ind <<- as.data.frame(by_gp)
+     
+     ####print("GP DF")
+     ####print(str(gp_df_ind))
+     
+     
+     ####print("#################################################")
+     # ####print(str(block_df_ind))
+     # ####print(str(gp_df_ind))
+     # ####print(str(series_list_gp))
+     # ####print(filter(gp_df_ind, block == block_df_ind$drilldown[1])$gram_parishad_name)
+     # ####print(filter(gp_df_ind, block == block_df_ind$drilldown[1])$value)
+     
+    for (i in 1:nrow(block_df_ind))
+       {
+        # series_list_gp[[i]] <- "Hello"
+        # ####print(series_list_gp)
+        
+        series_list_gp[[i]] <- list( id = block_df_ind$drilldown[i],
+                                         name = "Gram Panchayat",
+                                         data = list_parse
+                                         (data_frame(
+                                           name = filter(gp_df_ind, block == block_df_ind$drilldown[i])$gram_parishad_name,
+                                           y = filter(gp_df_ind, block == block_df_ind$drilldown[i])$value ),
+                                           drilldown = tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_"))
+                                         )
+        )
+     }
     
-    # print("Data set input")
+    series_list_gp <<- series_list_gp
+    ####print("OURSIDE SCOPE")
+    # ####print(series_list_gp)
+    
+    
+###################### FOR GS DRILL DOWN
+    
+ block_parishad <- tolower(paste(substr(df_ind$gram_parishad_name,1,4),'id',sep = "_")) 
+    
+   # ####print("FILTER COMMAND RESULT")
+   # ####print(block_parishad)
+   # ####print(gp_df_ind$drilldown[1])
+   # ####print(colnames(df_ind))
+   # ####print(ind_name_gs)
+   # ####print(which(colnames(df_ind)== ind_name_gs))
+   # ####print(filter(df_ind, block_parishad == gp_df_ind$drilldown[1])$gram_parishad_name)
+   # ####print(filter(df_ind, block_parishad == gp_df_ind$drilldown[1])[,which(colnames(df_ind)== ind_name_gs)])
+    
+   for (i in 1:nrow(gp_df_ind))
+     {
+       # series_list_gp[[i]] <- "Hello"
+       # ####print(series_list_gp)
+   
+       series_list_gs[[i]] <- list( id = gp_df_ind$drilldown[i],
+                                    # name = "Gram Sansad",
+                                    data = list_parse
+                                    (data_frame(
+                                      name = filter(df_ind, block_parishad == gp_df_ind$drilldown[i])$gram_parishad_name,
+                                      y = filter(df_ind, block_parishad == gp_df_ind$drilldown[i])[,which(colnames(df_ind)== ind_name_gs)] 
+                                      )
+                                    )
+       )
+     }
+   
+   series_list_gs <<- series_list_gs
+   ####print("OURSIDE SCOPE GP LIST")
+   # ####print(series_list_gp)
+   ####print(input$tabs)
+   
+###########################################################
+   
+
+   
+   
+      
+   
+   
+   
+   
+   
+   
+   
+   
+###########################################################   
+   
+   # if (input$tabs == 1)
+   # { 
+   toggleModal(session, "modalExample", "open")
+    # }
+   # else if (input$tabs == 2)
+   # {
+   #   toggleModal(session, "modalExample1", "open")
+   # }
+   # else if (input$tabs == 3)
+   # {
+   #   toggleModal(session, "modalExample2", "open")
+   # }
+   
+   # toggleModal(session, "modalExample1", "open")
+
+ })
+   
+output$popup <- renderUI({
+       bsModal("modalExample", indicators_master$Indicator[SelectedRow()], "", size = "large",
+               highchartOutput("indicators", height = "400px"))
+      
+  })
+
+output$popup1 <- renderUI({
+  bsModal("modalExample1", indicators_master$Indicator[SelectedRow()], "", size = "large",
+          highchartOutput("indicators1", height = "400px"))
+  
+})
+
+output$popup2 <- renderUI({
+  bsModal("modalExample2", indicators_master$Indicator[SelectedRow()], "", size = "large",
+          highchartOutput("indicators2", height = "400px"))
+
+})
+
+output$indicators <- renderHighchart ({
+  
+  ####print("in SERVER function")
+  ####print(str(block_df_ind))
+  
+  # canvasClickFunction <- JS("function(event) {Shiny.onInputChange('canvasClicked', [this.name, event.point.x]);}")
+  
+                 highchart() %>%
+                     hc_chart(type = "column"
+                            # ,
+                            # events = list(
+                            #   drilldown =
+                            #     JS('function(e) {
+                            # console.log(e.seriesOptions);
+                            # this.setTitle({text: e.seriesOptions.name});
+                            # } '))
+                     ) %>%
+                 
+                  # hc_title(text = "High Risk Cases - NCDs") %>%
+                  # hc_title(text = "<b>High Risk Cases</b> - NCDs",
+                 #          # # margin = 20,
+                 #          # align = "centre",
+                 #          style = list(color = "#05008b", useHTML = TRUE)) %>%
+   
+                 # hc_title(text = span( "High Risk Cases - NCDs", style="color:#e32c3e")
+                 #           # style = list(fontWeight = "bold")
+                 #          ) %>%
+   
+   
+  
+                   hc_xAxis(type = "category",
+                            title = list(text = "Geography Name")
+                            # JS('function(e) {chart.options.yAxis[0].title.text = "new title";  }')
+   
+                   ) %>%
+  
+                 hc_yAxis(title = list(text = "Indicator Value")) %>%
+                 hc_legend(enabled = FALSE) %>%
+                   hc_plotOptions(
+                     series = list(
+                       boderWidth = 0,
+                     dataLabels = list(enabled = TRUE)
+                     # ,
+                       # colors = scale_color_brewer( ,type = "seq", palette = 1, direction = 1)
+                       # colors = rev(colorRampPalette(brewer.pal(9,"Blues"))(nrow(bar_ncd_high_risk))),
+                      # events = list(click = canvasClickFunction)
+                     )) %>%
+   
+                  hc_add_series(
+                     name = "Block Wise Values",
+                     data = list_parse(block_df_ind),
+                     colorByPoint = TRUE
+                   ) %>%
+  
+    
+  
+                    
+                  hc_drilldown(
+                      allowPointDrilldown = TRUE,
+                      series = series_list_gp,
+                      colorByPoint = TRUE
+                    )
+                    
+  
+  
+  
+  
+  
+})
+  
+output$indicators1 <- renderHighchart ({
+  
+  ####print("in SERVER function")
+  # ####print(series_list_gp)
+  
+  # canvasClickFunction <- JS("function(event) {Shiny.onInputChange('canvasClicked', [this.name, event.point.x]);}")
+  
+  highchart() %>%
+    hc_chart(type = "column"
+             # ,
+             # events = list(
+             #   drilldown =
+             #     JS('function(e) {
+             # console.log(e.seriesOptions);
+             # this.setTitle({text: e.seriesOptions.name});
+             # } '))
+    ) %>%
+    
+    # hc_title(text = "High Risk Cases - NCDs") %>%
+    # hc_title(text = "<b>High Risk Cases</b> - NCDs",
+    #          # # margin = 20,
+    #          # align = "centre",
+    #          style = list(color = "#05008b", useHTML = TRUE)) %>%
+    
+    # hc_title(text = span( "High Risk Cases - NCDs", style="color:#e32c3e")
+    #           # style = list(fontWeight = "bold")
+    #          ) %>%
+    
+  
+  
+  hc_xAxis(type = "category",
+           title = list(text = "Geography Name")
+           # JS('function(e) {chart.options.yAxis[0].title.text = "new title";  }')
+           
+  ) %>%
+    
+    hc_yAxis(title = list(text = "Indicator Value")) %>%
+    hc_legend(enabled = FALSE) %>%
+    hc_plotOptions(
+      series = list(
+        boderWidth = 0,
+        dataLabels = list(enabled = TRUE)
+        # ,
+        # colors = scale_color_brewer( ,type = "seq", palette = 1, direction = 1)
+        # colors = rev(colorRampPalette(brewer.pal(9,"Blues"))(nrow(bar_ncd_high_risk))),
+        # events = list(click = canvasClickFunction)
+      )) %>%
+    
+    hc_add_series(
+      name = "Block Wise Values",
+      data = list_parse(block_df_ind),
+      colorByPoint = TRUE
+    ) %>%
+    
+    hc_drilldown(
+      allowPointDrilldown = TRUE,
+      series = series_list_gp,
+      colorByPoint = TRUE
+    )
+  
+})
+
+output$indicators2 <- renderHighchart ({
+  
+  ####print("in SERVER function")
+  if (SelectedRow() == 22)
+  {
+      
+    
+      hchart(call_status,type = "pie", name = "No. of callers")%>% 
+      hc_add_theme(hc_theme_smpl())%>%
+      hc_legend(enabled = FALSE) %>%
+      hc_title(text = paste0("Call Status (all Calls)",span(" (","N=",format(nrow(sci_dump_temp), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
+               style = list(fontWeight = "bold")) %>%
+      
+      hc_plotOptions( pie = list(colors = brewer.pal(6,"Set3"),
+                                 # type = "pie",
+                                 name = "No. of Calls", 
+                                 colorByPoint = TRUE,
+                                 # center = c('55%', '50%'),
+                                 size = 170, 
+                                 dataLabels = list(enabled = TRUE,
+                                                   format = '{point.name}: ({point.percentage:.1f}%)'
+                                                   # {point.percentage:.1f}
+                                 ))) %>% 
+      hc_credits(enabled = TRUE,
+                 text = "Source: SCI SDI Helpline data,2017-18",
+                 href = "https://www.savethechildren.in/",
+                 style = list(fontSize = "9px")) %>%
+      hc_exporting(enabled = TRUE)
+    
+    
+    
+  }
+  
+    
+    
+    
+  else{
+    
+    highchart() %>%
+    hc_chart(type = "column"
+             # ,
+             # events = list(
+             #   drilldown =
+             #     JS('function(e) {
+             # console.log(e.seriesOptions);
+             # this.setTitle({text: e.seriesOptions.name});
+             # } '))
+    ) %>%
+    
+    # hc_title(text = "High Risk Cases - NCDs") %>%
+    # hc_title(text = "<b>High Risk Cases</b> - NCDs",
+    #          # # margin = 20,
+    #          # align = "centre",
+    #          style = list(color = "#05008b", useHTML = TRUE)) %>%
+    
+    # hc_title(text = span( "High Risk Cases - NCDs", style="color:#e32c3e")
+    #           # style = list(fontWeight = "bold")
+    #          ) %>%
+    
+  
+  
+  hc_xAxis(type = "category",
+           title = list(text = "Geography Name")
+           # JS('function(e) {chart.options.yAxis[0].title.text = "new title";  }')
+           
+  ) %>%
+    
+    hc_yAxis(title = list(text = "Indicator Value")) %>%
+    hc_legend(enabled = FALSE) %>%
+    hc_plotOptions(
+      series = list(
+        boderWidth = 0,
+        dataLabels = list(enabled = TRUE)
+        # ,
+        # colors = scale_color_brewer( ,type = "seq", palette = 1, direction = 1)
+        # colors = rev(colorRampPalette(brewer.pal(9,"Blues"))(nrow(bar_ncd_high_risk))),
+        # events = list(click = canvasClickFunction)
+      )) %>%
+    
+    hc_add_series(
+      name = "Block Wise Values",
+      data = list_parse(block_df_ind),
+      colorByPoint = TRUE
+    ) %>%
+    
+    hc_drilldown(
+      allowPointDrilldown = TRUE,
+      series = series_list_gp,
+      colorByPoint = TRUE
+    )
+  }
+  
+  
+  
+})
+
+output$child_development = DT::renderDataTable( 
+    
+    # ####print("Data set input")
     # 
-    # print(datasetInput())
-    
-    DT::datatable(getIndVal() %>% filter(Category == "Child Development") %>% select(S_No,Indicator,Value) , container = sketch1, options = opts1, selection = 'single',
+    # ####print(datasetInput())
+   
+    DT::datatable(getIndVal() %>% filter(Category == "Child Development") %>% 
+                    select(
+                      # View,
+                      S_No,Indicator,Unit,Value) 
+                  , container = sketch1, options = opts1, selection = 'single',
                   class = 'cell-border stripe',
                   caption = 'Table 2: Child Development Indicators.',
-                  extensions = 'Buttons'
+                  extensions = 'Buttons',escape = FALSE,rownames= FALSE
                   
                   # filter = 'top'
     )
     %>%
-      formatStyle('Value',  color = 'black', backgroundColor = '#ffff73', fontWeight = 'bold',`font-size` = '18px') %>%
+      formatStyle('Value',  color = 'black', backgroundColor = '#fffdd5', fontWeight = 'bold',`font-size` = '18px') %>%
       formatStyle('Indicator',  color = 'black', `font-size` = '14px')
     
     )
   
   output$panchayat_rural_development = DT::renderDataTable( 
     
-    # print("Data set input")
+    # ####print("Data set input")
     # 
-    # print(datasetInput())
+    # ####print(datasetInput())
     
-    DT::datatable(getIndVal() %>% filter(Category == "Panchayat and Rural Development") %>% select(S_No,Indicator,Value) , container = sketch1, options = opts1, selection = 'single',
+    DT::datatable(getIndVal() %>% filter(Category == "Panchayat and Rural Development") %>% 
+                    select(
+                      # View,
+                      S_No,Indicator,Unit,Value) 
+                  , container = sketch1, options = opts1, selection = 'single',
                   class = 'cell-border stripe',
                   caption = 'Table 3: Panchayat and Rural Development Indicators.',
-                  extensions = 'Buttons'
+                  extensions = 'Buttons',escape = FALSE,rownames= FALSE
                   
                   # filter = 'top'
     )
     %>%
-      formatStyle('Value',  color = 'black', backgroundColor = '#ffff73', fontWeight = 'bold',`font-size` = '18px') %>%
-      formatStyle('Indicator',  color = 'black', `font-size` = '14px')
+      formatStyle('Value', color = 'black', backgroundColor = '#fffdd5', fontWeight = 'bold',`font-size` = '18px') %>%
+      formatStyle('Indicator',  color = 'black', `font-size` = '14px') 
+  
+  )
+  
+
+  
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+################################################################################
+  
+output$under18Preg <- renderHighchart({
+  
+  ####print("in PREG CHART")
+  df_ind <- getIndGS()
+  
+  ind_name <- paste("mean","(","i",5,",","na.rm=TRUE",")",sep = "")
+  
+  ind_name_gs <- paste0("i",5)
+  summ_name <- paste0('mean_', "i",5)
+  
+  # NOTE CHANGE
+  # df_ind <- df_ind[,which(colnames(df_ind)== ind_name_gs)]
+  # print(df_ind)
+  # df_ind <- df_ind[complete.cases(df_ind), ]
+  # print(df_ind)
+  df_ind$gram_parishad <- tolower(paste(substr(df_ind$gram_parishad_name,1,4),'id',sep = "_")) 
+  print(df_ind$gram_parishad)
+  # NOTE CHANGE ABOVE
+  
+  # FOR BLOCK LEVEL GRAPH
+  by_block <- 
+    df_ind %>% group_by(block_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  by_block <- by_block[complete.cases(by_block), ]
+  # ####print("by_BLOBCKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK")
+  # ####print(by_block)
+  colnames(by_block)<- c("name","y")
+  by_block$y <- as.integer(by_block$y )
+  
+  by_block$drilldown <- tolower(paste(substr(by_block$name,1,4),'id',sep = "_"))
+  block_df_ind <- as.data.frame(by_block)
+  
+   print("BLOCK DF")
+   print(str(block_df_ind))
+  
+  # FOR GP LEVEL GRAPH
+  by_gp <- 
+    df_ind %>% group_by(block_parishad_name, gram_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  
+  by_gp <- by_gp[complete.cases(by_gp), ]
+  
+  # print(str(by_gp))
+  
+  colnames(by_gp)<- c("block_parishad_name","gram_parishad_name","value")
+  
+  # print(str(tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_")) ))
+  
+  by_gp$drilldown <- tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_")) 
+  by_gp$block <- tolower(paste(substr(by_gp$block_parishad_name,1,4),'id',sep = "_"))
+  by_gp$gp <- tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_"))
+  gp_df_ind <- as.data.frame(by_gp)
+  
+ # CHANGE ADDITION 
+  
+  # CHANGE ADDITION   
+  
+  # print("GP DF")
+  # print(str(gp_df_ind))
+  
+  for (i in 1:nrow(block_df_ind))
+  {
+    # series_list_gp[[i]] <- "Hello"
+    # ####print(series_list_gp)
     
+    series_list_gp[[i]] <- list( id = block_df_ind$drilldown[i],
+                                 name = "Gram Panchayat",
+                                 data = list_parse
+                                 (data_frame(
+                                   name = filter(gp_df_ind, block == block_df_ind$drilldown[i])$gram_parishad_name,
+                                   y = round(filter(gp_df_ind, block == block_df_ind$drilldown[i])$value,digits = 0),
+                                 # )
+                                   drilldown = filter(gp_df_ind, block == block_df_ind$drilldown[i])$gp)  
+                                 )
+    )
     
+  }
+  # print("SSSSSSSSSSSSSSSSSSSSS series_list_gp SSSSSSSSSSSSSSSSSSSSSS")
+  # print(series_list_gp)
+  
+ for (i in 1:nrow(gp_df_ind))
+  {
+  series_list_gs[[i]] <- list( id = gp_df_ind$gp[i],
+                               # name = "Gram Sansad",
+                               data = list_parse
+                               (data_frame(
+                                 name = filter(df_ind, gram_parishad == gp_df_ind$gp[i])$gram_sansad_name,
+                                 y = filter(df_ind, gram_parishad == gp_df_ind$gp[i])[,which(colnames(df_ind)== ind_name_gs)]
+
+                                 )
+                               )
+  )
+ }
+  # print("SSSSSSSSSSSSSSSSSSSSS series_list_gs SSSSSSSSSSSSSSSSSSSSSS")
+  # print(series_list_gs)
+  
+  
+  
+  series_list_gp <- series_list_gp  
+  
+  
+  highchart() %>%
+    hc_chart(type = "column"
+             # ,color = "#5e81fd"
+             # ,
+             # events = list(
+             #   drilldown =
+             #     JS('function(e) {
+             # console.log(e.seriesOptions);
+             # this.setTitle({text: e.seriesOptions.name});
+             # } '))
+    ) %>%
+    
+    # hc_title(text = "Under-18 Pregnancies (%)") %>%
+    # hc_title(text = "<b>High Risk Cases</b> - NCDs",
+    #          # # margin = 20,
+    #          # align = "centre",
+    #          style = list(color = "#05008b", useHTML = TRUE)) %>%
+    
+    # hc_title(text = span( "High Risk Cases - NCDs", style="color:#e32c3e")
+    #           # style = list(fontWeight = "bold")
+    #          ) %>%
+    
+  
+  
+  hc_xAxis(type = "category",
+           title = list(text = "Panchayat Samiti/Gram Panchayat/Gram Sansad")
+           # JS('function(e) {chart.options.yAxis[0].title.text = "new title";  }')
+           
+  ) %>%
+    
+    hc_yAxis(title = list(text = "Percentage")
+             # ,
+             # plotLines = list(
+             #   list(label = list(text = paste0("District Average"," = ",round(mean(block_df_ind$y),digits = 0))),
+             #        color = "#00b300",
+             #        width = 1.0,
+             #        value = mean(block_df_ind$y)))
+             ) %>%
+    hc_legend(enabled = FALSE) %>%
+    hc_plotOptions(
+      series = list(
+        boderWidth = 0,
+        dataLabels = list(enabled = TRUE) 
+         # ,
+         # colors = scale_color_brewer( ,type = "seq", palette = 1, direction = 1),
+         # colors = rev(colorRampPalette(brewer.pal(1,"Blues"))(nrow(block_df_ind)))
+        # color = "#5e81fd"
+        # colors= c("#FF0000")
+        # events = list(click = canvasClickFunction)
+      )) %>%
+    
+    hc_add_series(
+      name = "Panchayat Samiti",
+      data = list_parse(block_df_ind),
+      # colorByPoint = TRUE,
+      color = "#2171b5"
+      
+    ) %>%
+    
+    hc_drilldown(
+      allowPointDrilldown = TRUE,
+      series = c(series_list_gp,series_list_gs),
+      colorByPoint = TRUE
     )
   
-############################################ TABLE END ######################################  
+ 
+})  
+  
+
+output$homeDelivery <- renderHighchart({
     
-#   
-# datasetInput <- reactive({
-#     
-#     validate(
-#       need(input$district != "", "Please select one or more district")
-#     )
-#     
-#     sci_dump_temp <- sci_dump[sci_dump$District %in% input$district,]
-#     return(filter(sci_dump_temp, 
-#                   as.Date(sci_dump_temp$X_3_Date_of_call) >= input$dateRange[1],
-#                   as.Date(sci_dump_temp$X_3_Date_of_call) <= input$dateRange[2]))
-#   })
-# 
-# datasetInput1 <- reactive({
-#   
-#   validate(
-#     need(input$district != "", "Please select one or more district")
-#   )
-#   
-#   sci_dump_temp1 <- sci_dump[sci_dump$District %in% input$district,]
-#   return(sci_dump_temp1)
-#   # return(filter(sci_dump_temp, 
-#   #               as.Date(sci_dump_temp$X_3_Date_of_call) >= input$dateRange[1],
-#   #               as.Date(sci_dump_temp$X_3_Date_of_call) <= input$dateRange[2]))
-# })
-#   
-#   
-# observeEvent(input$dateRange[1], {
-#     end_date = input$dateRange[2]
-#     # If end date is earlier than start date, update the end date to be the same as the new start date
-#     if (input$dateRange[2] < input$dateRange[1]) {
-#       end_date = input$dateRange[1]
-#     }
-#     updateDateRangeInput(session,"dateRange", start=input$dateRange[1], end=end_date )
-#   })
-#   
-# 
-# ########################CALCULATIONS  
-#  
-#  
-#   output$totalCalls <- renderValueBox({
-#     
-#      valueBox(
-#        format(nrow(datasetInput()),nsmall=0, big.mark=","), "Total Calls", icon = icon("phone-square"), color = "aqua"
-#     ) 
-#     
-#   })
-#   
-#   output$inboundCalls <- renderValueBox({
-#     
-#     valueBox(
-#       format(nrow(datasetInput()[datasetInput()$X_1_Call_Type == "inbound",]), nsmall=0, big.mark=","), "Inbound Calls", icon = icon("arrow-down"), color = "fuchsia"
-#     )  
-#     
-#   })
-#   
-#   output$outboundCalls <- renderValueBox({
-#     
-#     valueBox(
-#       format(nrow(datasetInput()[datasetInput()$X_1_Call_Type == "outbound",]), nsmall=0, big.mark=","), "Outbound Calls", icon = icon("arrow-up"), color = "orange"
-#     ) 
-#     
-#   })
-#   
-#   output$casesReferred <- renderValueBox({
-#     
-#     
-#     valueBox(
-#       format(nrow(filter(datasetInput(),X_23_1_Case_referred_=="yes",
-#                   X_13_Reason_of_the_call.grievance =="False")), nsmall=0, big.mark=","), 
-#       "Referred Cases", icon = icon("user-md"), color = "red"
-#     )
-#     
-#   })
-#   
-#   
-# ######################################### for timeseries dygraph
-#   
-#   output$dailyCalls <- renderDygraph ({
-#     
-#     
-#     validate(
-#       need((input$dateRange[2] - input$dateRange[1]) > 1, "This graph will only show for dates with a difference of 2 or more days")
-#     )
-#     
-#     aa <- datasetInput() %>% 
-#       group_by(X_3_Date_of_call,X_1_Call_Type) %>% summarise(n=n())
-#     
-#     aa <- aa[c(-1),]
-#     aa_in <- filter(aa, X_1_Call_Type == "inbound") %>% select(X_3_Date_of_call,n)
-#     colnames(aa_in)[1] <- "Date"
-#     colnames(aa_in)[2] <- "Call_Nos_ib"
-#    
-#     x1 <- xts(aa_in, as.Date(aa_in$Date, format = "%Y-%m-%d")) 
-#     
-#     aa_out <- filter(aa, X_1_Call_Type == "outbound") %>% select(X_3_Date_of_call,n)
-#     colnames(aa_out)[1] <- "Date"
-#     colnames(aa_out)[2] <- "Call_Nos_ob"
-#     x2 <- xts(aa_out, as.Date(aa_out$Date, format = "%Y-%m-%d")) 
-#     
-#     max_range_yaxis <- max(max(aa_in$Call_Nos_ib),max(aa_out$Call_Nos_ob))
-#     arr_dis <- cbind(x1, x2)
-#     # arr_dis <- cbind(arr_dis, x0)
-#     
-#     # arr_dis[is.na(arr_dis)] <- ""
-#     
-#     
-#     
-#     dygraph(arr_dis
-#             # , main = "SDI Daily Helpline Calls"
-#             ) %>%
-#       dyCSS("dygraph.css") %>%
-#       dyAxis("y", label = "No. of calls",valueRange = c(0,max_range_yaxis+3)) %>%
-#       dyAxis("x", label = "Date" , drawGrid = TRUE) %>%
-#       dyOptions(
-#                 colors = RColorBrewer::brewer.pal(2, "Spectral"),
-#                 includeZero = TRUE,
-#                 axisLineColor = "navy",
-#                 gridLineColor = "lightblue",
-#                 connectSeparatedPoints = TRUE,
-#                 rightGap = 55
-#                 # ,
-#                 # drawGapEdgePoints = TRUE
-#                 ) %>%
-#       dySeries("Call_Nos_ib", label = "Inbound") %>%
-#       dySeries("Call_Nos_ob", label = "Outbound") %>%
-#       # dySeries("Call_Nos_total", label = "Total") %>%
-#       dyLegend(show = "always", hideOnMouseOut = FALSE) %>%
-#       dyHighlight(highlightSeriesOpts = list(strokeWidth = 1.5),
-#                   highlightCircleSize = 5,
-#                   highlightSeriesBackgroundAlpha = 0.3,
-#                   hideOnMouseOut = FALSE)%>%
-#       # dyRoller(rollPeriod = 1)%>%
-#       dyRangeSelector(height = 15, strokeColor = "")
-#     
-#     
-#     
-#   })
-#  
-# #################################################################################################################    
-#   
-#   
-#   # sketch1 <- htmltools::withTags(table(
-#   #   class = "display",
-#   #   style = "bootstrap",
-#   #   tableHeader(c("ID", colnames(get_dt())))
-#   #   # tableFooter(c("", c("",0,0)))
-#   # ))
-#   
-#  opts1 <- list( 
-#     
-#     initComplete = JS(
-#       "function(settings, json) {",
-#       "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
-#       "}"),
-#     
-#     searchHighlight = TRUE,
-#     # columnDefs = list(list(targets = c(1:10), searchable = FALSE)),
-#     pageLength = 10,
-#     
-#     dom = 'lfrtiBp',
-#     buttons = 
-#       list ('print',list(
-#         extend = 'collection',
-#         buttons = c('csv','excel', 'pdf'),
-#         text = 'Download'
-#       ))
-#    )
-# 
-#  #################################################################################################################    
-#  
-#  get_dt <- reactive({
-# 
-#     sci_data <- datasetInput()
-#     sss <- as.data.table(sci_data)
-# 
-#     sss_temp <- sss[,c(13,14,16,7,8,10,17,41,42,44)]
-#     colnames(sss_temp)[3] <- "Village"
-#     colnames(sss_temp)[4] <- "Date"
-#     colnames(sss_temp)[5] <- "Time"
-#     colnames(sss_temp)[6] <- "Caller Name"
-#     colnames(sss_temp)[7] <- "Mobile"
-#     colnames(sss_temp)[8] <- "If Referred"
-#     colnames(sss_temp)[9] <- "Referred to"
-#     colnames(sss_temp)[10] <- "Referral Issue"
-# 
-#      return(sss_temp)
-# 
-#  })
-#   
-# #################################################################################################################    
-#  
-#   
-#  output$dtcallList = DT::renderDataTable(
-#     
-#        DT::datatable(get_dt() , 
-#                      # container = sketch1, 
-#                      options = opts1, 
-#                      selection = 'multiple',
-#                      class = 'cell-border stripe',
-#                      # caption = 'Table 1: SDI Helpline Call Details',
-#                      extensions = 'Buttons',
-#                      filter = 'bottom'
-#     )
-#   )
-#   
-# 
-#   #################################### "Month wise Call Summary" #############################################################################    
-#   
-#   dt_monthly <- reactive({
-#     
-#     ib <- NULL
-#     ob <- NULL
-#     ref <- NULL
-#     # format(as.Date(sci_dump$X_3_Date_of_call) , format="%b %Y") 
-#     month_all <-sort(unique(as.yearmon(datasetInput()$X_3_Date_of_call))) 
-#     # month_all <- unique(as.character(sort(factor((months(as.Date(datasetInput()$X_3_Date_of_call))),levels=month.name))))
-#     month_all <- as.character(month_all)
-#     # print(month_all)
-#     
-#     # for (i in 1:length(month_all))
-#     for (i in seq(1:length(month_all)))
-#     {
-#       ib[i] <- filter(datasetInput(),X_1_Call_Type =="inbound", as.yearmon(datasetInput()$X_3_Date_of_call) == month_all[i])%>%
-#         summarise(n=n())
-#       ob[i] <- filter(datasetInput(),X_1_Call_Type =="outbound", as.yearmon(datasetInput()$X_3_Date_of_call) == month_all[i])%>%
-#         summarise(n=n())
-#       
-#       # ref[i] <- filter(datasetInput(),X_23_1_Case_referred_=="yes",
-#       #                  X_13_Reason_of_the_call.grievance =="False",months(as.Date(datasetInput()$X_3_Date_of_call)) == month_all[i])%>%
-#       #   summarise(n=n())
-#       ref[i] <- filter(datasetInput(),X_23_1_Case_referred_=="yes",
-#                        X_13_Reason_of_the_call.grievance =="False",as.yearmon(datasetInput()$X_3_Date_of_call) == month_all[i])%>%
-#         summarise(n=n())
-#     }
-#     
-#     df <- cbind(month_all,ib,ob,ref)
-#     # print(df)
-#     
-#     return(df)
-#     
-#   })
-#   
-#   
-# output$barmonthlyCalls <- renderHighchart({
-#   
-#   xx <- dt_monthly()
-#   
-#   validate(
-#      need(length(unlist(xx[,"month_all"])) >1, "This graph needs dates across two months atleast. Intervals in the same month are not shown right now")
-#   )
-#     
-#     
-#     
-#     # print(length(unlist(xx[,"month_all"])))
-#     # print(unlist(xx[,"ib"]))
-#     # print(unlist(xx[,"ob"]))
-#     # print(unlist(xx[,"ref"]))
-#     
-#     hc <- highchart() %>% 
-#       hc_xAxis(categories = unlist(xx[,1])
-#                # ,
-#                # title = list(text = "Month")
-#                ) %>% 
-#       hc_add_series(name = "Inbound", data = unlist(xx[,2]), color = "fuchsia") %>% 
-#       hc_add_series(name = "Outbound", data = unlist(xx[,3]), color = "orange") %>% 
-#       hc_add_series(name = "Referral", data = unlist(xx[,4]), color = "red") %>%
-#       # hc_add_series(name = "Other city",
-#       #               data = (citytemp$tokyo + citytemp$london)/2)
-#       
-#       # hc_title(text = paste0("SDI Monthly Summary and Referrals"
-#       #                        # ,
-#       #                        # span(" (","N=",nrow(temp1),")", style="color:#e32c3e")
-#       #                        ),
-#       #          style = list(fontWeight = "bold")) %>%
-#       # hc_subtitle(text = "This histogram is based on the the recorded discharge time,from the hospital register") %>%
-# 
-#       hc_plotOptions(
-#         column = list(
-#           # colors = brewer.pal(3,"RdYlBu"),
-#           # type = "pie",
-#           # name = "No. of Calls",
-#           # colorByPoint = TRUE,
-#           # center = c('55%', '50%'),
-#           # size = 170,
-#           dataLabels = list(enabled = TRUE,
-#                             format = '{point.y}'
-#                             # format = '{point.name}: ({point.percentage:.1f}%)'
-#                             # {point.percentage:.1f}
-#           ))) %>%
-#       hc_yAxis(title = list(text = "Number of Calls"), allowDecimals = FALSE) %>%
-#       
-#       hc_credits(enabled = TRUE,
-#                  text = "Source: SCI SDI Helpline data,2017-18",
-#                  href = "https://www.savethechildren.in/",
-#                  style = list(fontSize = "9px")) %>%
-#       hc_exporting(enabled = TRUE)%>%
-#       hc_chart(type = "column") 
-#     
-#       hc
-#       
-# 
-#     
-#     
-#   })
-#   
-#   
-#   
-#   
-#   #################################### "Time of Call" #############################################################################    
-#  
-#   
-#  output$histcallTime <- renderHighchart({
-#     
-#      sci_dump_temp <- datasetInput()
-#     # sci_dump_temp <- filter(datasetInput(), X_1_Call_Type == "inbound")
-#     temp1 <- filter(sci_dump_temp,sci_dump_temp$X_4_Time_of_call !="" )
-#     thour_temp0 <- temp1$X_4_Time_of_call
-#     thour_temp1 <- gsub(":", ".", thour_temp0)
-#     thour_temp2 <- substr(thour_temp1, start = 1, stop = 5)
-#     thour <-as.numeric(thour_temp2)
-#     
-# 
-#     hchart(thour,color="#fca8c7",breaks=8)%>% 
-#       hc_add_theme(hc_theme_smpl())%>%
-#       hc_legend(enabled = FALSE) %>%
-#       hc_title(text = paste0("Time of Call",span(" (","N=",format(nrow(temp1), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
-#                style = list(fontWeight = "bold")) %>%
-#       # hc_subtitle(text = "This histogram is based on the the recorded discharge time,from the hospital register") %>%
-#       hc_xAxis(title = list(text = "Call Time (Hours of Day)"),
-#                opposite = FALSE
-#                # plotLines = list(
-#                #   list(label = list(text = "Mean"),
-#                #        color = "#F4133C",
-#                #        width = 1.5,
-#                #        value = mean(dataset$Time.of.SHH.death.LAMA.Referred..Hour)))
-#       ) %>%
-#       
-#       hc_plotOptions( 
-#         column = list(
-#                       colors = brewer.pal(10,"RdYlBu"),
-#                       # type = "pie",
-#                       # name = "No. of Calls", 
-#                       # colorByPoint = TRUE,
-#                       # center = c('55%', '50%'),
-#                       # size = 170, 
-#                       dataLabels = list(enabled = TRUE,
-#                                         format = '{point.y}'
-#                                         # format = '{point.name}: ({point.percentage:.1f}%)'
-#                                         # {point.percentage:.1f}
-#                       ))) %>% 
-#       hc_yAxis(title = list(text = "Number of Calls"), allowDecimals = FALSE) %>%
-#       
-#       hc_credits(enabled = TRUE,
-#                  text = "Source: SCI SDI Helpline data,2017-18",
-#                  href = "https://www.savethechildren.in/",
-#                  style = list(fontSize = "9px")) %>%
-#       hc_exporting(enabled = TRUE)
-#     
-#     
-#   })
-# 
-# ###################################Call Status (all Calls)##############################################################################    
-#  
-#   output$histcallStatus <- renderHighchart({
-#     
-#     sci_dump_temp <- datasetInput()
-#     # sci_dump_temp <- filter(datasetInput(), X_1_Call_Type == "inbound")
-#     # temp1 <- filter(sci_dump_temp,sci_dump_temp$X_4_Time_of_call !="" )
-#     call_status <- sci_dump_temp$X_1_1_Outbound_Call_Status
-#     
-#     call_status[call_status == ""] <- "Inbound"
-#     call_status[call_status == "call_received"] <- "Outbound"
-#     call_status[call_status == "call_received_"] <- "Refused To Talk"
-#     call_status[call_status == "mobile_phone_n"] <- "Not Reachable"
-#     call_status[call_status == "mobile_phone_n_1"] <- "Switched Off"
-#     call_status[call_status == "call_not_recei"] <- "Not Received"
-#     
-#     
-#     hchart(call_status,type = "pie", name = "No. of callers")%>% 
-#       hc_add_theme(hc_theme_smpl())%>%
-#       hc_legend(enabled = FALSE) %>%
-#       hc_title(text = paste0("Call Status (all Calls)",span(" (","N=",format(nrow(sci_dump_temp), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
-#                style = list(fontWeight = "bold")) %>%
-#       # hc_subtitle(text = "This histogram is based on the the recorded discharge time,from the hospital register") %>%
-#       # hc_xAxis(title = list(text = "Call Time (Hours of Day)"),
-#       #          opposite = FALSE
-#       #          # plotLines = list(
-#       #          #   list(label = list(text = "Mean"),
-#       #          #        color = "#F4133C",
-#       #          #        width = 1.5,
-#       #          #        value = mean(dataset$Time.of.SHH.death.LAMA.Referred..Hour)))
-#       # ) %>%
-#       
-#       # hc_yAxis(title = list(text = "Number of Calls"), allowDecimals = FALSE) %>%
-#     
-#     hc_plotOptions( pie = list(colors = brewer.pal(6,"Set3"),
-#                                # type = "pie",
-#                                name = "No. of Calls", 
-#                                colorByPoint = TRUE,
-#                                # center = c('55%', '50%'),
-#                                size = 170, 
-#                                dataLabels = list(enabled = TRUE,
-#                                                  format = '{point.name}: ({point.percentage:.1f}%)'
-#                                                  # {point.percentage:.1f}
-#                                ))) %>% 
-#       hc_credits(enabled = TRUE,
-#                  text = "Source: SCI SDI Helpline data,2017-18",
-#                  href = "https://www.savethechildren.in/",
-#                  style = list(fontSize = "9px")) %>%
-#       hc_exporting(enabled = TRUE)
-#     
-#     
-#   })
-#   
-# ############################################Duration of Call#####################################################################    
-#   
-#   
-#   output$histDuration <- renderHighchart({
-#     
-#     sci_dump_temp <- datasetInput()
-#     # sci_dump_temp <- filter(datasetInput(), X_1_Call_Type == "inbound")
-#     temp1 <- filter(sci_dump_temp,sci_dump_temp$X_2_Duration_of_Call !="" )
-#     # thour <- temp1$X_2_Duration_of_Call
-#     # thour <-as.integer(gsub( ":.*$", "", thour ))
-#     
-#    
-#     
-#     hchart(as.integer(temp1$X_2_Duration_of_Call),color="#beffb8",breaks=15)%>% 
-#       hc_add_theme(hc_theme_smpl())%>%
-#       hc_legend(enabled = FALSE) %>%
-#       hc_title(text = paste0("Duration of Call",span(" (","N=",format(nrow(temp1), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
-#                style = list(fontWeight = "bold")) %>%
-#       # hc_subtitle(text = "This histogram is based on the the recorded discharge time,from the hospital register") %>%
-#       hc_xAxis(title = list(text = "Duration of call (mins)"),
-#                opposite = FALSE,
-#                 plotLines = list(
-#                   list(label = list(text = paste0("Mean","(",
-#                                                   round(mean(as.integer(temp1$X_2_Duration_of_Call)),digits=1),
-#                                                   " mins",")")),
-#                        color = "#F4133C",
-#                        width = 1.0,
-#                        value = mean(as.integer(temp1$X_2_Duration_of_Call))))
-#       ) %>%
-#       
-#       hc_yAxis(title = list(text = "Number of Calls"), allowDecimals = FALSE) %>%
-#       
-#       hc_plotOptions( 
-#         column = list(
-#           # colors = brewer.pal(10,"RdYlBu"),
-#           # type = "pie",
-#           # name = "No. of Calls", 
-#           # colorByPoint = TRUE,
-#           # center = c('55%', '50%'),
-#           # size = 170, 
-#           dataLabels = list(enabled = TRUE,
-#                             format = '{point.y}'
-#                             # format = '{point.name}: ({point.percentage:.1f}%)'
-#                             # {point.percentage:.1f}
-#           ))) %>% 
-#       
-#       hc_credits(enabled = TRUE,
-#                  text = "Source: SCI SDI Helpline data,2017-18",
-#                  href = "https://www.savethechildren.in/",
-#                  style = list(fontSize = "9px")) %>%
-#       hc_exporting(enabled = TRUE)
-#     
-#     
-#   })
-#   
-# ######################################Who called: By Gender###########################################################################    
-#   
-#   
-#  output$histGender <- renderHighchart({
-#     
-#     sci_dump_temp <- datasetInput()
-#     # sci_dump_temp <- filter(datasetInput(), X_1_Call_Type == "inbound")
-#     temp2 <- filter(sci_dump_temp,sci_dump_temp$X_5_Sex_of_the_caller !="" )
-#     gender <- temp2$X_5_Sex_of_the_caller
-#     gender[gender == "male"] <- "Male"
-#     gender[gender == "female"] <- "Female"
-#     # thour <-as.integer(gsub( ":.*$", "", thour ))
-#     
-#     
-#     hchart(gender, type = "pie", name = "No. of callers") %>% 
-#       hc_add_theme(hc_theme_smpl())%>%
-#       hc_legend(enabled = FALSE) %>%
-#       hc_title(text = paste0("Who called: By Gender",span(" (","N=",format(nrow(temp2), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
-#                style = list(fontWeight = "bold")) %>%
-#       hc_plotOptions( pie = list(colors = brewer.pal(2,"YlOrBr"),
-#                                  # type = "pie",
-#                                  name = "No. of Calls", 
-#                                  colorByPoint = TRUE,
-#                                  # center = c('55%', '50%'),
-#                                  size = 260, 
-#                                  dataLabels = list(enabled = TRUE,
-#                                                    format = '{point.name}: ({point.percentage:.1f}%)'
-#                                                    # {point.percentage:.1f}
-#                                  ))) %>% 
-#       
-#       hc_credits(enabled = TRUE,
-#                  text = "Source: SCI SDI Helpline data,2017-18",
-#                  href = "https://www.savethechildren.in/",
-#                  style = list(fontSize = "9px")) %>%
-#       hc_exporting(enabled = TRUE)
-#     
-#   
-#   })
-# 
-# #########################################"Who Called: By Role########################################################################    
-#  
-#   output$histcallerType <- renderHighchart({
-#     
-#     sci_dump_temp <- datasetInput()
-#     # sci_dump_temp <- filter(datasetInput(), X_1_Call_Type == "inbound")
-#     
-#     temp3 <- filter(sci_dump_temp,sci_dump_temp$X_7_Type_of_caller !="" )
-#     caller_type <- temp3$X_7_Type_of_caller
-#     caller_type[caller_type == "father"] <- "Father"
-#     caller_type[caller_type == "family_member"] <- "Family Members"
-#     caller_type[caller_type == "anm"] <- "ANM"
-#     caller_type[caller_type == "_asha"] <- "ASHA"
-#     caller_type[caller_type == "mother"] <- "Mother"
-#     caller_type[caller_type == "children__18_years"] <- "Children above 18yrs"
-#     caller_type[caller_type == "aww"] <- "AWW"
-#     caller_type[caller_type == "_other"] <- "Others"
-#     caller_type[caller_type == "pregnant_women"] <- "Pregnant Women"
-#     
-#     labels <- unique(caller_type)
-#     value <- NULL
-# 
-#     for(i in 1:length(labels))
-#     {
-#       value[i] <- table(caller_type)[labels[i]]
-# 
-#     }
-#     
-#     # print(length(labels))
-#     # print(labels)
-#     # print(length(value))
-#     # print(value)
-#     
-#     # hchart(caller_type, type = "pie", name = "No. of callers") %>% 
-#     highchart() %>%  
-#     hc_add_theme(hc_theme_smpl())%>%
-#       hc_legend(enabled = FALSE) %>%
-#       hc_title(text = paste0("Who Called: By Role",span(" (","N=",format(nrow(temp3), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
-#                style = list(fontWeight = "bold")) %>%
-# 
-#       hc_add_series_labels_values(labels, value,
-#                                   # colors = brewer.pal(9,"Set3"),
-#                                   type = "pie",
-#                                   name = "No. of Calls", 
-#                                   colorByPoint = TRUE,
-#                                   center = c('55%', '50%'),
-#                                   size = 190, 
-#                                   dataLabels = list(enabled = TRUE,
-#                                                     format = '{point.name}: ({point.percentage:.1f}%)'
-#                                                     # {point.percentage:.1f}
-#                                                     )) %>%
-#       
-#       hc_plotOptions( pie = list(colors = brewer.pal(9,"Pastel1")
-#                                   )) %>% 
-#       
-#       # hc_plotOptions(pie = list(
-#       #   dataLabels = list(enabled = TRUE)
-#       # )) %>% 
-#     # hc_plotOptions(
-#     #   dataLabels = list(enabled = TRUE,
-#     #                                  format = '{point.name}: {point.percentage:.1f} %')
-#     #   ) %>%
-#     
-#     hc_credits(enabled = TRUE,
-#                  text = "Source: SCI SDI Helpline data,2017-18",
-#                  href = "https://www.savethechildren.in/",
-#                  style = list(fontSize = "9px")) %>%
-#       hc_exporting(enabled = TRUE)
-#     
-#     
-#   })
-#   
-# ##########################################Why calls were made?#######################################################################    
-#   
-#   output$histcallerReason <- renderHighchart({
-#     
-#     sci_dump_temp <- datasetInput()
-#     # sci_dump_temp <- filter(datasetInput(), X_1_Call_Type == "inbound")
-#     
-#     temp4 <- filter(sci_dump_temp,sci_dump_temp$X_13_Reason_of_the_call.grievance == "True" | sci_dump_temp$X_13_Reason_of_the_call.information == "True" 
-#                     | sci_dump_temp$X_13_Reason_of_the_call.other == "True" )
-#     reason <- select(temp4, X_13_Reason_of_the_call.grievance, X_13_Reason_of_the_call.information,
-#                      X_13_Reason_of_the_call.other)
-#     
-#     # print(nrow(reason))
-#     
-#     colnames(reason)[1] <- "Report Grievance"
-#     colnames(reason)[2] <- "Get Information"
-#     colnames(reason)[3] <- "Others"
-#     
-#     reason[reason == "True"] <- 1
-#     reason[reason == "False"] <- 0
-#     reason$`Report Grievance` <- as.integer(reason$`Report Grievance`)
-#     reason$`Get Information` <- as.integer(reason$`Get Information`)
-#     reason$Others <- as.integer(reason$Others)
-#     
-#     reason_all <- c(rep("Report Grievance",sum(reason$`Report Grievance`)),rep("Health Information",sum(reason$`Get Information`))
-#                     , rep("Others",sum(reason$Others)))
-#     
-#     hchart(reason_all, type = "column", name = "No. of callers") %>% 
-#       hc_add_theme(hc_theme_smpl())%>%
-#       hc_legend(enabled = FALSE) %>%
-#       hc_title(text = paste0("Why calls were made?",span(" (","N=",format(nrow(temp4), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
-#                style = list(fontWeight = "bold")) %>%
-#      
-#       # hc_plotOptions(
-#       #   
-#       #   column = list(
-#       #     colorByPoint = TRUE
-#       #   )
-#       # ) %>%
-#       
-#       hc_plotOptions( 
-#             column = list(colors = brewer.pal(3,"Set3"),
-#                                  # type = "pie",
-#                                  name = "No. of Calls", 
-#                                  colorByPoint = TRUE,
-#                                  # center = c('55%', '50%'),
-#                                  size = 170, 
-#                                  dataLabels = list(enabled = TRUE,
-#                                                    format = '{point.y}'
-#                                                    # format = '{point.name}: ({point.percentage:.1f}%)'
-#                                                    # {point.percentage:.1f}
-#                                  ))) %>% 
-#     hc_credits(enabled = TRUE,
-#                  text = "Source: SCI SDI Helpline data,2017-18",
-#                  href = "https://www.savethechildren.in/",
-#                  style = list(fontSize = "9px")) %>%
-#       
-#     hc_exporting(enabled = TRUE)
-#     
-#     
-#   })
-#   
-# ###################################What Health Information Sought?##############################################################################    
-#   
-# 
-# output$histinfoSought <- renderHighchart({
-#     
-#     sci_dump_temp <- datasetInput()
-#     # sci_dump_temp <- filter(datasetInput(), X_1_Call_Type == "inbound")
-#     
-#     temp5 <- filter(sci_dump_temp,sci_dump_temp$X_13_Reason_of_the_call.information == "True")
-#     # & sci_dump_temp$Type_of_information.diarrhoea == "True" )
-#     direason <- select(temp5, Type_of_information.diarrhoea, Type_of_information.other)
-#     
-#     colnames(direason)[1] <- "Diarrhoea"
-#     colnames(direason)[2] <- "Other Info"
-#     
-#     
-#     direason[direason == "True"] <- 1
-#     direason[direason == "False"] <- 0
-#     direason$Diarrhoea <- as.integer(direason$Diarrhoea)
-#     direason$`Other Info` <- as.integer(direason$`Other Info`)
-#     
-#     
-#     direason_all <- c(rep("Diarrhoea",sum(direason$Diarrhoea)),rep("Other Info",sum(direason$`Other Info`)))
-#     
-#     
-#     hchart(direason_all, type = "pie", name = "No. of callers") %>% 
-#       hc_add_theme(hc_theme_smpl())%>%
-#       hc_legend(enabled = FALSE) %>%
-#       hc_title(text = paste0("What Health Information Sought?",span(" (","N=",format(nrow(temp5), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
-#                style = list(fontWeight = "bold")) %>%
-#       
-#       hc_plotOptions( pie = list(colors = brewer.pal(2,"Paired"),
-#                                  # type = "pie",
-#                                  name = "No. of Calls", 
-#                                  colorByPoint = TRUE,
-#                                  # center = c('55%', '50%'),
-#                                  size = 200, 
-#                                  dataLabels = list(enabled = TRUE,
-#                                                    format = '{point.name}: ({point.percentage:.1f}%)'
-#                                                    # {point.percentage:.1f}
-#                                  ))) %>% 
-#       
-#       hc_credits(enabled = TRUE,
-#                  text = "Source: SCI SDI Helpline data,2017-18",
-#                  href = "https://www.savethechildren.in/",
-#                  style = list(fontSize = "9px")) %>%
-#       hc_exporting(enabled = TRUE)
-#     
-#     
-#   })
-#   
-#   
-# ###########################################Diarrohea Health Information For?######################################################################    
-#   
-#   
-#   output$histinfoDiarrhea <- renderHighchart({
-#     
-#     sci_dump_temp <- datasetInput()
-#     # sci_dump_temp <- filter(datasetInput(), X_1_Call_Type == "inbound")
-#     
-#     temp6 <- filter(sci_dump_temp,sci_dump_temp$X_13_Reason_of_the_call.information == "True" & sci_dump_temp$Type_of_information.diarrhoea == "True" )
-#     
-#     diinforeason <- select(temp6, X_20_Issue_category.diarrhoea_symp,
-#                            X_20_Issue_category.diarrhoea_prev,X_20_Issue_category.diarrhoea_trea)
-#     
-#     colnames(diinforeason)[1] <- "Diarrhoea Symptoms"
-#     colnames(diinforeason)[2] <- "Diarrhoea Prevention"
-#     colnames(diinforeason)[3] <- "Diarrhoea Treatment"
-#     
-#     diinforeason[diinforeason == "True"] <- 1
-#     diinforeason[diinforeason == "False"] <- 0
-#     diinforeason$`Diarrhoea Symptoms` <- as.integer(diinforeason$`Diarrhoea Symptoms`)
-#     diinforeason$`Diarrhoea Prevention` <- as.integer(diinforeason$`Diarrhoea Prevention`)
-#     diinforeason$`Diarrhoea Treatment` <- as.integer(diinforeason$`Diarrhoea Treatment`)
-#     
-#     diinforeason_all <- c(rep("Diarrhoea Symptoms",sum(diinforeason$`Diarrhoea Symptoms`)),
-#                           rep("Diarrhoea Prevention",sum(diinforeason$`Diarrhoea Prevention`)),
-#                           rep( "Diarrhoea Treatment",sum(diinforeason$`Diarrhoea Treatment`))
-#     )
-#     
-#     
-#     # reason_1 <- data.frame( Grievance = c(sum(reason$Grievance)), Information = c(sum(reason$`Information Seeking`)), Others =  c(sum(reason$Others))
-#     #                         )
-#     
-#     
-#     hchart(diinforeason_all, type = "column", name = "No. of callers") %>% 
-#       hc_add_theme(hc_theme_smpl())%>%
-#       hc_legend(enabled = FALSE) %>%
-#       hc_title(text = paste0("Diarrohea Health Information For?",span(" (","N=",format(nrow(temp6), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
-#                style = list(fontWeight = "bold")) %>%
-#       
-#       hc_plotOptions( 
-#         column = list(colors = brewer.pal(3,"RdYlBu"),
-#                       # type = "pie",
-#                       name = "No. of Calls", 
-#                       colorByPoint = TRUE,
-#                       # center = c('55%', '50%'),
-#                       size = 170, 
-#                       dataLabels = list(enabled = TRUE,
-#                                         format = '{point.y}'
-#                                         # format = '{point.name}: ({point.percentage:.1f}%)'
-#                                         # {point.percentage:.1f}
-#                       ))) %>% 
-#       
-#       
-#       hc_credits(enabled = TRUE,
-#                  text = "Source: SCI SDI Helpline data,2017-18",
-#                  href = "https://www.savethechildren.in/",
-#                  style = list(fontSize = "9px")) %>%
-#       hc_exporting(enabled = TRUE)
-#     
-#     
-#     
-#   })
-#   
-# ################################### Were Diarrohea Cases Referred ? ##############################################################################    
-#   
-#   output$histReferral <- renderHighchart({
-#     
-#     sci_dump_temp <- datasetInput()
-#     # sci_dump_temp <- filter(datasetInput(), X_1_Call_Type == "inbound")
-#     temp6 <- filter(sci_dump_temp,sci_dump_temp$X_13_Reason_of_the_call.information == "True" & 
-#                       sci_dump_temp$Type_of_information.diarrhoea == "True" )
-#     # temp7 <- filter(sci_dump_temp,sci_dump_temp$X_23_1_Case_referred_ != "")
-#     
-#     referral_all <- select(temp6, X_23_1_Case_referred_ ,Case_Referral)
-#     # referral_yes <- filter(referral_all, Case_Referral != "")   
-#     
-#     referral_all$X_23_1_Case_referred_ [referral_all$X_23_1_Case_referred_ == ""] <- "no"
-#     referral_all[referral_all == "yes"] <- "Yes"
-#     referral_all[referral_all == "no"] <- "No"
-#     
-#    
-#     hchart(referral_all$X_23_1_Case_referred_, type = "pie", name = "No. of callers") %>% 
-#       hc_add_theme(hc_theme_smpl())%>%
-#       hc_legend(enabled = FALSE) %>%
-#       hc_title(text = paste0("Were Diarrohea Cases Referred ?",span(" (","N=",format(nrow(temp6), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
-#                style = list(fontWeight = "bold")) %>%
-#      
-#       # hc_subtitle(text = "This pie chart is based on the the recorded mode of transportation,from the hospital register") %>%
-#       # hc_xAxis(title = list(text = "Number of Days"),
-#       #          opposite = FALSE,
-#       #          plotLines = list(
-#       #            list(label = list(text = "Mean"),
-#       #                 color = "#F4133C",
-#       #                 width = 1.5,
-#       #                 value = mean(as.integer(stay))))) %>%
-#       # 
-#       # hc_yAxis(title = list(text = "Number of Pregnant Women"), allowDecimals = FALSE) %>%
-#       
-#       hc_plotOptions( pie = list(colors = brewer.pal(2,"Set3"),
-#                                # type = "pie",
-#                                name = "No. of Calls", 
-#                                colorByPoint = TRUE,
-#                                # center = c('55%', '50%'),
-#                                size = 240, 
-#                                dataLabels = list(enabled = TRUE,
-#                                                  format = '{point.name}: ({point.percentage:.1f}%)'
-#                                                  # {point.percentage:.1f}
-#                                ))) %>% 
-#     
-#       hc_credits(enabled = TRUE,
-#                  text = "Source: SCI SDI Helpline data,2017-18",
-#                  href = "https://www.savethechildren.in/",
-#                  style = list(fontSize = "9px")) %>%
-#       hc_exporting(enabled = TRUE)
-#     
-#     
-#     
-#     
-#   })  
-#     
-# ###################################### Diarrohea Cases referred To ? ###########################################################################    
-#   
-#   output$histreferredTo <- renderHighchart({
-#     
-#     sci_dump_temp <- datasetInput()
-#     # sci_dump_temp <- filter(datasetInput(), X_1_Call_Type == "inbound")
-#     temp7 <- filter(sci_dump_temp,sci_dump_temp$X_13_Reason_of_the_call.information == "True" & 
-#                       sci_dump_temp$Type_of_information.diarrhoea == "True" )
-#     
-#     referral_all <- select(temp7, X_23_1_Case_referred_ ,Case_Referral)
-#     # referral_all$Case_Referral [referral_all$Case_Referral == ""] <- "other"
-#     
-#     referral_yes <- filter(referral_all, Case_Referral != "")   
-#     
-#     referral_yes[referral_yes == "chc"] <- "CHC"
-#     referral_yes[referral_yes == "phc"] <- "PHC"
-#     referral_yes[referral_yes == "anm"] <- "ANM"
-#     referral_yes[referral_yes == "asha"] <- "ASHA"
-#     referral_yes[referral_yes == "other"] <- "Other"
-#     
-#     hchart(referral_yes$Case_Referral, type = "pie", name = "No. of callers") %>% 
-#       hc_add_theme(hc_theme_smpl())%>%
-#       hc_legend(enabled = FALSE) %>%
-#       hc_title(text = paste0("Diarrohea Cases referred To ?",span(" (","N=",format(nrow(referral_yes), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
-#                style = list(fontWeight = "bold")) %>%
-#       # hc_subtitle(text = "This pie chart is based on the the recorded mode of transportation,from the hospital register") %>%
-#       # hc_xAxis(title = list(text = "Number of Days"),
-#       #          opposite = FALSE,
-#       #          plotLines = list(
-#       #            list(label = list(text = "Mean"),
-#       #                 color = "#F4133C",
-#       #                 width = 1.5,
-#       #                 value = mean(as.integer(stay))))) %>%
-#       # 
-#       # hc_yAxis(title = list(text = "Number of Pregnant Women"), allowDecimals = FALSE) %>%
-#       hc_plotOptions( pie = list(colors = brewer.pal(5,"Pastel1"),
-#                                  # type = "pie",
-#                                  name = "No. of Calls", 
-#                                  colorByPoint = TRUE,
-#                                  # center = c('55%', '50%'),
-#                                  size = 230, 
-#                                  dataLabels = list(enabled = TRUE,
-#                                                    format = '{point.name}: ({point.percentage:.1f}%)'
-#                                                    # {point.percentage:.1f}
-#                                  ))) %>% 
-#     
-#     
-#      hc_credits(enabled = TRUE,
-#                  text = "Source: SCI SDI Helpline data,2017-18",
-#                  href = "https://www.savethechildren.in/",
-#                  style = list(fontSize = "9px")) %>%
-#       hc_exporting(enabled = TRUE)
-#     
-#    
-#     
-#   })  
-#     
-# ######################################REFERRAL TAB CHARTS START HERE ###########################################################################    
-# 
-# output$colCallStatus <- renderHighchart({
-#   
-#   d_referral_cases <- inner_join(datasetInput(),d_referral_cases , by= "uuid")
-#   
-#   followup_1 <-  unlist(d_referral_cases$ref_followup_status_1)
-#   followup_2 <-  unlist(d_referral_cases$ref_followup_status_2)
-#   followup_3 <-  unlist(d_referral_cases$ref_followup_status_3)
-#   followup_4 <-  unlist(d_referral_cases$ref_followup_status_4)
-#   
-#   data_call_received <- c(table(followup_1)[1],table(followup_2)[2],table(followup_3)[2],table(followup_4)[2])
-#   data_unreachable <- c(table(followup_1)[2],table(followup_2)[3],ifelse(is.na(table(followup_3)[3]),0,table(followup_3)[3])
-#                         ,ifelse(is.na(table(followup_4)[3]),0,table(followup_4)[3]))
-#   
-#   hchart(d_referral_cases$ref_followup_status, type = "pie", name = "No. of callers") %>% 
-#     hc_add_theme(hc_theme_smpl())%>%
-#     hc_legend(enabled = FALSE) %>%
-#     hc_title(text = paste0("Referral Follow-up Call Status",span(" (","N=",format(nrow(d_referral_cases), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
-#              style = list(fontWeight = "bold")) %>%
-#     # hc_subtitle(text = "This pie chart is based on the the recorded mode of transportation,from the hospital register") %>%
-#     # hc_xAxis(title = list(text = "Number of Days"),
-#     #          opposite = FALSE,
-#     #          plotLines = list(
-#     #            list(label = list(text = "Mean"),
-#     #                 color = "#F4133C",
-#     #                 width = 1.5,
-#     #                 value = mean(as.integer(stay))))) %>%
-#     # 
-#     # hc_yAxis(title = list(text = "Number of Pregnant Women"), allowDecimals = FALSE) %>%
-#     hc_plotOptions( pie = list(colors = brewer.pal(5,"Pastel1"),
-#                                # type = "pie",
-#                                name = "No. of Calls", 
-#                                colorByPoint = TRUE,
-#                                # center = c('55%', '50%'),
-#                                size = 180, 
-#                                dataLabels = list(enabled = TRUE,
-#                                                  format = '{point.name}: ({point.percentage:.1f}%)'
-#                                                  # {point.percentage:.1f}
-#                                ))) %>% 
-#     
-#     
-#     hc_credits(enabled = TRUE,
-#                text = "Source: SCI SDI Helpline data,2017-18",
-#                href = "https://www.savethechildren.in/",
-#                style = list(fontSize = "9px")) %>%
-#     hc_exporting(enabled = TRUE)
-#   
-# 
-# }) 
-# 
-# output$pieCasesStatus <- renderHighchart({
-#   
-#   d_referral_cases <- inner_join(datasetInput(),d_referral_cases , by= "uuid")
-#   
-#   hchart(filter(d_referral_cases, d_referral_cases$ref_followup_status == "Received")$ref_patient_status, type = "pie", name = "No. of callers") %>% 
-#     hc_add_theme(hc_theme_smpl())%>%
-#     hc_legend(enabled = FALSE) %>%
-#     hc_title(text = paste0("Current Status of Referred Cases",span(" (","N=",format(nrow(filter(d_referral_cases, d_referral_cases$ref_followup_status == "Received")), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
-#              style = list(fontWeight = "bold")) %>%
-#     # hc_subtitle(text = "This pie chart is based on the the recorded mode of transportation,from the hospital register") %>%
-#     # hc_xAxis(title = list(text = "Number of Days"),
-#     #          opposite = FALSE,
-#     #          plotLines = list(
-#     #            list(label = list(text = "Mean"),
-#     #                 color = "#F4133C",
-#     #                 width = 1.5,
-#     #                 value = mean(as.integer(stay))))) %>%
-#     # 
-#     # hc_yAxis(title = list(text = "Number of Pregnant Women"), allowDecimals = FALSE) %>%
-#     hc_plotOptions( pie = list(colors = brewer.pal(5,"Pastel1"),
-#                                # type = "pie",
-#                                name = "No. of Calls", 
-#                                colorByPoint = TRUE,
-#                                # center = c('55%', '50%'),
-#                                size = 180, 
-#                                dataLabels = list(enabled = TRUE,
-#                                                  format = '{point.name}: ({point.percentage:.1f}%)'
-#                                                  # {point.percentage:.1f}
-#                                ))) %>% 
-#     
-#     
-#     hc_credits(enabled = TRUE,
-#                text = "Source: SCI SDI Helpline data,2017-18",
-#                href = "https://www.savethechildren.in/",
-#                style = list(fontSize = "9px")) %>%
-#     hc_exporting(enabled = TRUE)
-#   
-#   
-# }) 
-# 
-# 
-# output$colTreatmentGiven <- renderHighchart({
-#   
-#   d_referral_cases <- inner_join(datasetInput(),d_referral_cases , by= "uuid")
-#   treatment_list_string <- paste(filter(d_referral_cases, d_referral_cases$ref_followup_status == "Received")$treatment_given,collapse=",")
-#   treatment_list_vec <- strsplit(treatment_list_string, ",")[[1]]
-#   treatment_list_vec <- trimws(treatment_list_vec, which = c("both"))
-#   # treatment_list_vec[treatment_list_vec == " anti diarrheal dose"] <- "Anti Diarrhoeal Dose"
-#   # treatment_list_vec[treatment_list_vec == "Antibiotic" | treatment_list_vec == " Antibiotic" ] <- "Antibiotics"
-#   # treatment_list_vec[treatment_list_vec ==  "ORS - Zinc" | treatment_list_vec == "ORS – Zinc"
-#   #                    | treatment_list_vec == "ORS Antibiotic"| treatment_list_vec == "ORS - Antibiotic"
-#   #                    | treatment_list_vec ==  " ORS - Zinc" ] <- "ORS+Zinc"
-#   treatment_list_vec <- treatment_list_vec[treatment_list_vec!= ""]
-#   
-# 
-#  hchart(treatment_list_vec, type = "column", name = "No. of Cases") %>%
-#     hc_add_theme(hc_theme_smpl())%>%
-#     hc_legend(enabled = FALSE) %>%
-#     hc_title(text = paste0("What Treatment was Taken?",span(" (","N=",format(nrow(filter(d_referral_cases, d_referral_cases$ref_followup_status == "Received")), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
-#              style = list(fontWeight = "bold")) %>%
-# 
-#     # hc_plotOptions(
-#     #
-#     #   column = list(
-#     #     colorByPoint = TRUE
-#     #   )
-#     # ) %>%
-# 
-#     hc_plotOptions(
-#       column = list(colors = brewer.pal(5,"Accent"),
-#                     # type = "pie",
-#                     name = "No. of Cases",
-#                     colorByPoint = TRUE,
-#                     # center = c('55%', '50%'),
-#                     size = 170,
-#                     dataLabels = list(enabled = TRUE,
-#                                       format = '{point.y}'
-#                                       # format = '{point.name}: ({point.percentage:.1f}%)'
-#                                       # {point.percentage:.1f}
-#                     ))) %>%
-#     hc_credits(enabled = TRUE,
-#                text = "Source: SCI SDI Helpline data,2017-18",
-#                href = "https://www.savethechildren.in/",
-#                style = list(fontSize = "9px")) %>%
-# 
-#     hc_exporting(enabled = TRUE)
-# 
-# 
-# })
-# 
-# output$scatterAgeRecovTreat <- renderHighchart({
-#   
-#   d_referral_cases1 <- inner_join(datasetInput(),d_referral_cases , by= "uuid")
-#   
-#   d_referral_cases1 <- filter(d_referral_cases1, d_referral_cases1$ref_patient_status_1== "Recovered" |
-#                                 d_referral_cases1$ref_patient_status_2== "Recovered" |
-#                                 d_referral_cases1$ref_patient_status_3== "Recovered" |
-#                                 d_referral_cases1$ref_patient_status_4== "Recovered", 
-#                                 d_referral_cases1$X_8_Age_of_Child !="" )
-#   
-#   d_referral_cases1 <- mutate(d_referral_cases1, recovery_days 
-#                               = as.integer(
-#                                 ifelse( d_referral_cases1$ref_patient_status_1 == "Recovered",
-#                                         (as.Date(filter(d_referral_cases1, d_referral_cases1$ref_patient_status_1 == "Recovered")$recovery_date_1, format = "%d/%m/%Y" ) - 
-#                                            as.Date(filter(d_referral_cases1, d_referral_cases1$ref_patient_status_1 == "Recovered")$X_3_Date_of_call , format = "%Y-%m-%d")
-#                                         ),
-#                                         ifelse(d_referral_cases1$ref_patient_status_2 == "Recovered",
-#                                                (as.Date(filter(d_referral_cases1, d_referral_cases1$ref_patient_status_2 == "Recovered")$recovery_date_2, format = "%d/%m/%Y" ) - 
-#                                                   as.Date(filter(d_referral_cases1, d_referral_cases1$ref_patient_status_2 == "Recovered")$X_3_Date_of_call , format = "%Y-%m-%d")
-#                                                ),
-#                                                ifelse(d_referral_cases1$ref_patient_status_3 == "Recovered",
-#                                                       (as.Date(filter(d_referral_cases1, d_referral_cases1$ref_patient_status_3 == "Recovered")$recovery_date_3, format = "%d/%m/%Y" ) - 
-#                                                          as.Date(filter(d_referral_cases1, d_referral_cases1$ref_patient_status_3 == "Recovered")$X_3_Date_of_call , format = "%Y-%m-%d")
-#                                                       ),
-#                                                       ifelse(d_referral_cases1$ref_patient_status_4 == "Recovered",
-#                                                              (as.Date(filter(d_referral_cases1, d_referral_cases1$ref_patient_status_4 == "Recovered")$recovery_date_4, format = "%d/%m/%Y" ) - 
-#                                                                 as.Date(filter(d_referral_cases1, d_referral_cases1$ref_patient_status_4 == "Recovered")$X_3_Date_of_call , format = "%Y-%m-%d")
-#                                                              ),""))))
-#                                 ))
-#   
-#   # d_referral_cases1$X_8_Age_of_Child[d_referral_cases1$X_8_Age_of_Child == ""] <- 0
-#   
-#   d_referral_cases1$treatment_all <- with(d_referral_cases1, paste(treatment_given_1,treatment_given_2,
-#                                                                    treatment_given_3,treatment_given_4, sep=""))
-#   
-#   hchart(d_referral_cases1, "scatter", hcaes(x = recovery_days , y = as.integer(X_8_Age_of_Child), group = treatment_all))%>%
-#   
-#   
-#   # hchart(as.integer(t2-t1),color="#fca8c7",breaks=10)%>%
-#     hc_add_theme(hc_theme_smpl())%>%
-#     hc_legend(enabled = TRUE) %>%
-#     hc_title(text = paste0("Age vs. Treatment vs. Recovery Days",span(" (","N=",format(nrow(filter(d_referral_cases1)), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
-#              style = list(fontWeight = "bold")) %>%
-#     hc_subtitle(text = "Age has been rounded down to the nearest integer.Click on legend to ON/OFF.") %>%
-#     hc_xAxis(title = list(text = "Days Taken for Recovery"),
-#              opposite = FALSE
-#              # plotLines = list(
-#              #   list(label = list(text = "Mean"),
-#              #        color = "#F4133C",
-#              #        width = 1.5,
-#              #        value = mean(dataset$Time.of.SHH.death.LAMA.Referred..Hour)))
-#     ) %>%
-#    # hc_plotOptions(
-#    #     scatter = list(
-#    #  #     colors = brewer.pal(10,"RdYlBu"),
-#    #  #     # type = "pie",
-#    #  #     # name = "No. of Calls",
-#    #  #     # colorByPoint = TRUE,
-#    #  #     # center = c('55%', '50%'),
-#    #  #     # size = 170,
-#    #      dataLabels = list(enabled = TRUE,
-#    #                         format = '{point.y}'
-#    #                         # format = '{point.name}: ({point.percentage:.1f}%)'
-#    #                         # {point.percentage:.1f}
-#    #       ))) %>%
-#     hc_yAxis(title = list(text = "Age in Years"), allowDecimals = FALSE) %>%
-# 
-#     hc_credits(enabled = TRUE,
-#                text = "Source: SCI SDI Helpline data,2017-18",
-#                href = "https://www.savethechildren.in/",
-#                style = list(fontSize = "9px")) %>%
-#     hc_exporting(enabled = TRUE)
-# 
-# 
-# })
-# 
-# output$dtCrosstab <- renderTable ({
-#   
-#   my_tbl = addmargins(table(one_group, another_group))
-#   printed_tbl = as.data.frame.matrix(my_tbl)
-#   print_tbl
-# }, include.rownames=TRUE)
-# 
-# 
-# 
-# #################################### TREE DIAGRAM ###############################################
-# 
-# output$dTree <- renderCollapsibleTree({
-#   
-#   d_referral_cases <- inner_join(datasetInput(),d_referral_cases , by= "uuid")
-#   d_referral_cases <- select(d_referral_cases,"ref_followup_status_1","ref_patient_status_1","treatment_given_1",
-#                              "ref_followup_status_2","ref_patient_status_2","treatment_given_2",
-#                              "ref_followup_status_3","ref_patient_status_3","treatment_given_3",
-#                              "ref_followup_status_4","ref_patient_status_4","treatment_given_4")
-#   
-#   vec <-  c("ref_followup_status_1","ref_patient_status_1","treatment_given_1",
-#             "ref_followup_status_2","ref_patient_status_2","treatment_given_2",
-#             "ref_followup_status_3","ref_patient_status_3","treatment_given_3",
-#             "ref_followup_status_4","ref_patient_status_4","treatment_given_4")
-#   d_referral_cases %>%
-#       group_by_(.dots = vec) %>%
-#       summarise(Cases = n()) %>%
-#                 # ,`Percentage of Cases`= n()*100/nrow(datasetInput()) ) %>%
-#       collapsibleTreeSummary(
-#         hierarchy =  c("ref_followup_status_1","ref_patient_status_1","treatment_given_1",
-#                        "ref_followup_status_2","ref_patient_status_2","treatment_given_2",
-#                        "ref_followup_status_3","ref_patient_status_3","treatment_given_3",
-#                        "ref_followup_status_4","ref_patient_status_4","treatment_given_4"),
-#         root = "Diarrohea Referral",
-#         width = 800,
-#         attribute = "Cases",
-#         zoomable = FALSE
-#        
-#       )
-#    
-# })
-# 
-# ######################## TREE ENDS ##############################################################################
-# 
-# 
-#     
-#   
+   
+  ####print("in PREG CHART")
+  df_ind <- getIndGS()
+  
+  ind_name <- paste("mean","(","i",7,",","na.rm=TRUE",")",sep = "")
+  
+  ind_name_gs <- paste0("i",7)
+  summ_name <- paste0('mean_', "i",7)
+  
+  # NOTE CHANGE
+  # df_ind <- df_ind[,which(colnames(df_ind)== ind_name_gs)]
+  # print(df_ind)
+  # df_ind <- df_ind[complete.cases(df_ind), ]
+  # print(df_ind)
+  df_ind$gram_parishad <- tolower(paste(substr(df_ind$gram_parishad_name,1,4),'id',sep = "_")) 
+  print(df_ind$gram_parishad)
+  # NOTE CHANGE ABOVE
+  
+  # FOR BLOCK LEVEL GRAPH
+  by_block <- 
+    df_ind %>% group_by(block_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  by_block <- by_block[complete.cases(by_block), ]
+  # ####print("by_BLOBCKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK")
+  # ####print(by_block)
+  colnames(by_block)<- c("name","y")
+  by_block$y <- as.integer(by_block$y )
+  
+  by_block$drilldown <- tolower(paste(substr(by_block$name,1,4),'id',sep = "_"))
+  block_df_ind <- as.data.frame(by_block)
+  
+  print("BLOCK DF")
+  print(str(block_df_ind))
+  
+  # FOR GP LEVEL GRAPH
+  by_gp <- 
+    df_ind %>% group_by(block_parishad_name, gram_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  
+  by_gp <- by_gp[complete.cases(by_gp), ]
+  
+  # print(str(by_gp))
+  
+  colnames(by_gp)<- c("block_parishad_name","gram_parishad_name","value")
+  
+  # print(str(tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_")) ))
+  
+  by_gp$drilldown <- tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_")) 
+  by_gp$block <- tolower(paste(substr(by_gp$block_parishad_name,1,4),'id',sep = "_"))
+  by_gp$gp <- tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_"))
+  gp_df_ind <- as.data.frame(by_gp)
+  
+  # CHANGE ADDITION 
+  
+  # CHANGE ADDITION   
+  
+  # print("GP DF")
+  # print(str(gp_df_ind))
+  
+  for (i in 1:nrow(block_df_ind))
+  {
+    # series_list_gp[[i]] <- "Hello"
+    # ####print(series_list_gp)
+    
+    series_list_gp[[i]] <- list( id = block_df_ind$drilldown[i],
+                                 name = "Gram Panchayat",
+                                 data = list_parse
+                                 (data_frame(
+                                   name = filter(gp_df_ind, block == block_df_ind$drilldown[i])$gram_parishad_name,
+                                   y = round(filter(gp_df_ind, block == block_df_ind$drilldown[i])$value,digits = 0),
+                                   # )
+                                   drilldown = filter(gp_df_ind, block == block_df_ind$drilldown[i])$gp)  
+                                 )
+    )
+    
+  }
+  # print("SSSSSSSSSSSSSSSSSSSSS series_list_gp SSSSSSSSSSSSSSSSSSSSSS")
+  # print(series_list_gp)
+  
+  for (i in 1:nrow(gp_df_ind))
+  {
+    series_list_gs[[i]] <- list( id = gp_df_ind$gp[i],
+                                 # name = "Gram Sansad",
+                                 data = list_parse
+                                 (data_frame(
+                                   name = filter(df_ind, gram_parishad == gp_df_ind$gp[i])$gram_sansad_name,
+                                   y = filter(df_ind, gram_parishad == gp_df_ind$gp[i])[,which(colnames(df_ind)== ind_name_gs)]
+                                   
+                                 )
+                                 )
+    )
+  }
+  # print("SSSSSSSSSSSSSSSSSSSSS series_list_gs SSSSSSSSSSSSSSSSSSSSSS")
+  # print(series_list_gs)
   
   
   
+  series_list_gp <- series_list_gp  
+    
+    highchart() %>%
+      hc_chart(type = "column"
+               # ,
+               # events = list(
+               #   drilldown =
+               #     JS('function(e) {
+               # console.log(e.seriesOptions);
+               # this.setTitle({text: e.seriesOptions.name});
+               # } '))
+      ) %>%
+      
+      # hc_title(text = "Home Deliveries of Total Deliveries (%)") %>%
+      # hc_title(text = "<b>High Risk Cases</b> - NCDs",
+      #          # # margin = 20,
+      #          # align = "centre",
+      #          style = list(color = "#05008b", useHTML = TRUE)) %>%
+      
+      # hc_title(text = span( "High Risk Cases - NCDs", style="color:#e32c3e")
+      #           # style = list(fontWeight = "bold")
+      #          ) %>%
+      
+      
+      
+    hc_xAxis(type = "category",
+             title = list(text = "Panchayat Samiti/Gram Panchayat/Gram Sansad")
+             # JS('function(e) {chart.options.yAxis[0].title.text = "new title";  }')
+             
+    ) %>%
+      
+      hc_yAxis(title = list(text = "Percentage")
+               # ,
+               # plotLines = list(
+               #   list(label = list(text = paste0("District Average"," = ",round(mean(block_df_ind$y),digits = 0))),
+               #        color = "#00b300",
+               #        width = 1.0,
+               #        value = mean(block_df_ind$y)))
+      ) %>%
+      hc_legend(enabled = FALSE) %>%
+      hc_plotOptions(
+        series = list(
+          boderWidth = 0,
+          dataLabels = list(enabled = TRUE) 
+          # ,
+          # # colors = scale_color_brewer( ,type = "seq", palette = 1, direction = 1),
+          # colors = rev(colorRampPalette(brewer.pal(9,"BuPu"))(nrow(block_df_ind)))
+          # events = list(click = canvasClickFunction)
+        )) %>%
+      
+      hc_add_series(
+        name = "Panchayat Samiti",
+        data = list_parse(block_df_ind),
+        # colorByPoint = TRUE
+        color = "#2171b5"
+      ) %>%
+      
+      hc_drilldown(
+        allowPointDrilldown = TRUE,
+        series = c(series_list_gp,series_list_gs),
+        colorByPoint = TRUE
+      )
+    
+    
+  })      
+  
+
+output$completeImmunization <- renderHighchart({
+
+  
+  ####print("in PREG CHART")
+  df_ind <- getIndGS()
+  
+  ind_name <- paste("mean","(","i",10,",","na.rm=TRUE",")",sep = "")
+  
+  ind_name_gs <- paste0("i",10)
+  summ_name <- paste0('mean_', "i",10)
+  
+  # NOTE CHANGE
+  # df_ind <- df_ind[,which(colnames(df_ind)== ind_name_gs)]
+  # print(df_ind)
+  # df_ind <- df_ind[complete.cases(df_ind), ]
+  # print(df_ind)
+  df_ind$gram_parishad <- tolower(paste(substr(df_ind$gram_parishad_name,1,4),'id',sep = "_")) 
+  print(df_ind$gram_parishad)
+  # NOTE CHANGE ABOVE
+  
+  # FOR BLOCK LEVEL GRAPH
+  by_block <- 
+    df_ind %>% group_by(block_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  by_block <- by_block[complete.cases(by_block), ]
+  # ####print("by_BLOBCKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK")
+  # ####print(by_block)
+  colnames(by_block)<- c("name","y")
+  by_block$y <- as.integer(by_block$y )
+  
+  by_block$drilldown <- tolower(paste(substr(by_block$name,1,4),'id',sep = "_"))
+  block_df_ind <- as.data.frame(by_block)
+  
+  print("BLOCK DF")
+  print(str(block_df_ind))
+  
+  # FOR GP LEVEL GRAPH
+  by_gp <- 
+    df_ind %>% group_by(block_parishad_name, gram_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  
+  by_gp <- by_gp[complete.cases(by_gp), ]
+  
+  # print(str(by_gp))
+  
+  colnames(by_gp)<- c("block_parishad_name","gram_parishad_name","value")
+  
+  # print(str(tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_")) ))
+  
+  by_gp$drilldown <- tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_")) 
+  by_gp$block <- tolower(paste(substr(by_gp$block_parishad_name,1,4),'id',sep = "_"))
+  by_gp$gp <- tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_"))
+  gp_df_ind <- as.data.frame(by_gp)
+  
+  # CHANGE ADDITION 
+  
+  # CHANGE ADDITION   
+  
+  # print("GP DF")
+  # print(str(gp_df_ind))
+  
+  for (i in 1:nrow(block_df_ind))
+  {
+    # series_list_gp[[i]] <- "Hello"
+    # ####print(series_list_gp)
+    
+    series_list_gp[[i]] <- list( id = block_df_ind$drilldown[i],
+                                 name = "Gram Panchayat",
+                                 data = list_parse
+                                 (data_frame(
+                                   name = filter(gp_df_ind, block == block_df_ind$drilldown[i])$gram_parishad_name,
+                                   y = round(filter(gp_df_ind, block == block_df_ind$drilldown[i])$value,digits = 0),
+                                   # )
+                                   drilldown = filter(gp_df_ind, block == block_df_ind$drilldown[i])$gp)  
+                                 )
+    )
+    
+  }
+  # print("SSSSSSSSSSSSSSSSSSSSS series_list_gp SSSSSSSSSSSSSSSSSSSSSS")
+  # print(series_list_gp)
+  
+  for (i in 1:nrow(gp_df_ind))
+  {
+    series_list_gs[[i]] <- list( id = gp_df_ind$gp[i],
+                                 # name = "Gram Sansad",
+                                 data = list_parse
+                                 (data_frame(
+                                   name = filter(df_ind, gram_parishad == gp_df_ind$gp[i])$gram_sansad_name,
+                                   y = filter(df_ind, gram_parishad == gp_df_ind$gp[i])[,which(colnames(df_ind)== ind_name_gs)]
+                                   
+                                 )
+                                 )
+    )
+  }
+  # print("SSSSSSSSSSSSSSSSSSSSS series_list_gs SSSSSSSSSSSSSSSSSSSSSS")
+  # print(series_list_gs)
+  
+  
+  
+  series_list_gp <- series_list_gp   
+  
+  
+  highchart() %>%
+    hc_chart(type = "column"
+             # ,
+             # events = list(
+             #   drilldown =
+             #     JS('function(e) {
+             # console.log(e.seriesOptions);
+             # this.setTitle({text: e.seriesOptions.name});
+             # } '))
+    ) %>%
+    
+    # hc_title(text = "Complete Immunization within 12 months (%)") %>%
+    # hc_title(text = "<b>High Risk Cases</b> - NCDs",
+    #          # # margin = 20,
+    #          # align = "centre",
+    #          style = list(color = "#05008b", useHTML = TRUE)) %>%
+    
+    # hc_title(text = span( "High Risk Cases - NCDs", style="color:#e32c3e")
+    #           # style = list(fontWeight = "bold")
+    #          ) %>%
+    
+    
+    
+  hc_xAxis(type = "category",
+           title = list(text = "Panchayat Samiti/Gram Panchayat/Gram Sansad")
+           # JS('function(e) {chart.options.yAxis[0].title.text = "new title";  }')
+           
+  ) %>%
+    
+    hc_yAxis(title = list(text = "Percentage")) %>%
+    hc_legend(enabled = FALSE) %>%
+    hc_plotOptions(
+      series = list(
+        boderWidth = 0
+        ,
+        dataLabels = list(enabled = TRUE) 
+        # ,
+        # # colors = scale_color_brewer( ,type = "seq", palette = 1, direction = 1),
+        # colors = rev(colorRampPalette(brewer.pal(4,"Blues"))(nrow(block_df_ind)))
+        # events = list(click = canvasClickFunction)
+      )) %>%
+    
+    hc_add_series(
+      name = "Panchayat Samiti",
+      data = list_parse(block_df_ind),
+      # colorByPoint = TRUE
+      color = "#2171b5"
+    ) %>%
+    
+    hc_drilldown(
+      allowPointDrilldown = TRUE,
+      series = c(series_list_gp,series_list_gs),
+      colorByPoint = TRUE
+    )
+  
+  
+})      
+
+
+output$reportedDiaChol <- renderHighchart({
+  
+  ####print("in PREG CHART")
+  df_ind <- getIndGS()
+  ind_name <- paste("mean","(","i",11,",","na.rm=TRUE",")",sep = "")
+  
+  ind_name_gs <- paste0("i",11)
+  summ_name <- paste0('mean_', "i",11)
+  
+  # FOR BLOCK LEVEL GRAPH
+  by_block <- 
+    df_ind %>% group_by(block_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  by_block <- by_block[complete.cases(by_block), ]
+  # ####print("by_BLOBCKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK")
+  # ####print(by_block)
+  colnames(by_block)<- c("name","y")
+  by_block$y <- as.integer(by_block$y )
+  
+  by_block$drilldown <- tolower(paste(substr(by_block$name,1,4),'id',sep = "_"))
+  block_df_ind <- as.data.frame(by_block)
+  ####print("BLOCK DF")
+  ####print(str(block_df_ind))
+  
+  # FOR GP LEVEL GRAPH
+  by_gp <- 
+    df_ind %>% group_by(block_parishad_name, gram_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  
+  by_gp <- by_gp[complete.cases(by_gp), ]
+  colnames(by_gp)<- c("block_parishad_name","gram_parishad_name","value")
+  by_gp$drilldown <- tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_")) 
+  by_gp$block <- tolower(paste(substr(by_gp$block_parishad_name,1,4),'id',sep = "_"))
+  gp_df_ind <- as.data.frame(by_gp)
+  
+  ####print("GP DF")
+  ####print(str(gp_df_ind))
+  
+  for (i in 1:nrow(block_df_ind))
+  {
+    # series_list_gp[[i]] <- "Hello"
+    # ####print(series_list_gp)
+    
+    series_list_gp[[i]] <- list( id = block_df_ind$drilldown[i],
+                                 name = "Gram Panchayat",
+                                 data = list_parse
+                                 (data_frame(
+                                   name = filter(gp_df_ind, block == block_df_ind$drilldown[i])$gram_parishad_name,
+                                   y = round(filter(gp_df_ind, block == block_df_ind$drilldown[i])$value,digits = 0))
+                                   # y = filter(gp_df_ind, block == block_df_ind$drilldown[i])$value )
+                                 )
+    )
+  }
+  
+  series_list_gp <- series_list_gp  
+  
+  
+  highchart() %>%
+    hc_chart(type = "column"
+             # ,
+             # events = list(
+             #   drilldown =
+             #     JS('function(e) {
+             # console.log(e.seriesOptions);
+             # this.setTitle({text: e.seriesOptions.name});
+             # } '))
+    ) %>%
+    
+    # hc_title(text = "Population reported for Diarrhoea/Cholera (%)") %>%
+    # hc_title(text = "<b>High Risk Cases</b> - NCDs",
+    #          # # margin = 20,
+    #          # align = "centre",
+    #          style = list(color = "#05008b", useHTML = TRUE)) %>%
+    
+    # hc_title(text = span( "High Risk Cases - NCDs", style="color:#e32c3e")
+    #           # style = list(fontWeight = "bold")
+    #          ) %>%
+    
+    
+    
+  hc_xAxis(type = "category",
+           title = list(text = "Block/GramPanchayat Name")
+           # JS('function(e) {chart.options.yAxis[0].title.text = "new title";  }')
+           
+  ) %>%
+    
+    hc_yAxis(title = list(text = "Percentage")) %>%
+    hc_legend(enabled = FALSE) %>%
+    hc_plotOptions(
+      series = list(
+        boderWidth = 0,
+        dataLabels = list(enabled = TRUE) 
+        # ,
+        # # colors = scale_color_brewer( ,type = "seq", palette = 1, direction = 1),
+        # colors = rev(colorRampPalette(brewer.pal(9,"BuPu"))(nrow(block_df_ind)))
+        # events = list(click = canvasClickFunction)
+      )) %>%
+    
+    hc_add_series(
+      name = "Panchayat Samiti",
+      data = list_parse(block_df_ind),
+      colorByPoint = TRUE
+    ) %>%
+    
+    hc_drilldown(
+      allowPointDrilldown = TRUE,
+      series = series_list_gp,
+      # colorByPoint = TRUE
+      color = "#2171b5"
+    )
+  
+  
+})   
+  
+
+output$reportedUknownFever <- renderHighchart({
+  
+  ####print("in PREG CHART")
+  df_ind <- getIndGS()
+  ind_name <- paste("mean","(","i",12,",","na.rm=TRUE",")",sep = "")
+  
+  ind_name_gs <- paste0("i",12)
+  summ_name <- paste0('mean_', "i",12)
+  
+  # FOR BLOCK LEVEL GRAPH
+  by_block <- 
+    df_ind %>% group_by(block_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  by_block <- by_block[complete.cases(by_block), ]
+  # ####print("by_BLOBCKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK")
+  # ####print(by_block)
+  colnames(by_block)<- c("name","y")
+  by_block$y <- as.integer(by_block$y )
+  
+  by_block$drilldown <- tolower(paste(substr(by_block$name,1,4),'id',sep = "_"))
+  block_df_ind <- as.data.frame(by_block)
+  ####print("BLOCK DF")
+  ####print(str(block_df_ind))
+  
+  # FOR GP LEVEL GRAPH
+  by_gp <- 
+    df_ind %>% group_by(block_parishad_name, gram_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  
+  by_gp <- by_gp[complete.cases(by_gp), ]
+  colnames(by_gp)<- c("block_parishad_name","gram_parishad_name","value")
+  by_gp$drilldown <- tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_")) 
+  by_gp$block <- tolower(paste(substr(by_gp$block_parishad_name,1,4),'id',sep = "_"))
+  gp_df_ind <- as.data.frame(by_gp)
+  
+  ####print("GP DF")
+  ####print(str(gp_df_ind))
+  
+  for (i in 1:nrow(block_df_ind))
+  {
+    # series_list_gp[[i]] <- "Hello"
+    # ####print(series_list_gp)
+    
+    series_list_gp[[i]] <- list( id = block_df_ind$drilldown[i],
+                                 name = "Gram Panchayat",
+                                 data = list_parse
+                                 (data_frame(
+                                   name = filter(gp_df_ind, block == block_df_ind$drilldown[i])$gram_parishad_name,
+                                   y = round(filter(gp_df_ind, block == block_df_ind$drilldown[i])$value,digits = 0))
+                                   # y = filter(gp_df_ind, block == block_df_ind$drilldown[i])$value )
+                                 )
+    )
+  }
+  
+  series_list_gp <- series_list_gp  
+  
+  
+  highchart() %>%
+    hc_chart(type = "column"
+             # ,
+             # events = list(
+             #   drilldown =
+             #     JS('function(e) {
+             # console.log(e.seriesOptions);
+             # this.setTitle({text: e.seriesOptions.name});
+             # } '))
+    ) %>%
+    
+    # hc_title(text = "Population reported for Unknown Fever (%)") %>%
+    # hc_title(text = "<b>High Risk Cases</b> - NCDs",
+    #          # # margin = 20,
+    #          # align = "centre",
+    #          style = list(color = "#05008b", useHTML = TRUE)) %>%
+    
+    # hc_title(text = span( "High Risk Cases - NCDs", style="color:#e32c3e")
+    #           # style = list(fontWeight = "bold")
+    #          ) %>%
+    
+    
+    
+  hc_xAxis(type = "category",
+           title = list(text = "Block/GramPanchayat Name")
+           # JS('function(e) {chart.options.yAxis[0].title.text = "new title";  }')
+           
+  ) %>%
+    
+    hc_yAxis(title = list(text = "Percentage")) %>%
+    hc_legend(enabled = FALSE) %>%
+    hc_plotOptions(
+      series = list(
+        boderWidth = 0,
+        dataLabels = list(enabled = TRUE) 
+        # ,
+        # # colors = scale_color_brewer( ,type = "seq", palette = 1, direction = 1),
+        # colors = rev(colorRampPalette(brewer.pal(9,"Blues"))(nrow(block_df_ind)))
+        # events = list(click = canvasClickFunction)
+      )) %>%
+    
+    hc_add_series(
+      name = "Panchayat Samiti",
+      data = list_parse(block_df_ind),
+      # colorByPoint = TRUE
+      color = "#2171b5"
+    ) %>%
+    
+    hc_drilldown(
+      allowPointDrilldown = TRUE,
+      series = series_list_gp,
+      colorByPoint = TRUE
+    )
+  
+  
+})     
+  
+
+output$reportedLBW <- renderHighchart({
+  
+  ####print("in PREG CHART")
+  df_ind <- getIndGS()
+  ind_name <- paste("mean","(","i",18,",","na.rm=TRUE",")",sep = "")
+  
+  ind_name_gs <- paste0("i",18)
+  summ_name <- paste0('mean_', "i",18)
+  
+  # FOR BLOCK LEVEL GRAPH
+  by_block <- 
+    df_ind %>% group_by(block_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  by_block <- by_block[complete.cases(by_block), ]
+  # ####print("by_BLOBCKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK")
+  # ####print(by_block)
+  colnames(by_block)<- c("name","y")
+  by_block$y <- as.integer(by_block$y )
+  
+  by_block$drilldown <- tolower(paste(substr(by_block$name,1,4),'id',sep = "_"))
+  block_df_ind <- as.data.frame(by_block)
+  ####print("BLOCK DF")
+  ###print(str(block_df_ind))
+  
+  # FOR GP LEVEL GRAPH
+  by_gp <- 
+    df_ind %>% group_by(block_parishad_name, gram_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  
+  by_gp <- by_gp[complete.cases(by_gp), ]
+  colnames(by_gp)<- c("block_parishad_name","gram_parishad_name","value")
+  by_gp$drilldown <- tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_")) 
+  by_gp$block <- tolower(paste(substr(by_gp$block_parishad_name,1,4),'id',sep = "_"))
+  gp_df_ind <- as.data.frame(by_gp)
+  
+  ###print("GP DF")
+  ###print(str(gp_df_ind))
+  
+  for (i in 1:nrow(block_df_ind))
+  {
+    # series_list_gp[[i]] <- "Hello"
+    # ###print(series_list_gp)
+    
+    series_list_gp[[i]] <- list( id = block_df_ind$drilldown[i],
+                                 name = "Gram Panchayat",
+                                 data = list_parse
+                                 (data_frame(
+                                   name = filter(gp_df_ind, block == block_df_ind$drilldown[i])$gram_parishad_name,
+                                   y = round(filter(gp_df_ind, block == block_df_ind$drilldown[i])$value,digits = 0))
+                                   # y = filter(gp_df_ind, block == block_df_ind$drilldown[i])$value )
+                                 )
+    )
+  }
+  
+  series_list_gp <- series_list_gp  
+  
+  
+  highchart() %>%
+    hc_chart(type = "column"
+             # ,
+             # events = list(
+             #   drilldown =
+             #     JS('function(e) {
+             # console.log(e.seriesOptions);
+             # this.setTitle({text: e.seriesOptions.name});
+             # } '))
+    ) %>%
+    
+    # hc_title(text = "Low Birth Weight (%)") %>%
+    # hc_title(text = "<b>High Risk Cases</b> - NCDs",
+    #          # # margin = 20,
+    #          # align = "centre",
+    #          style = list(color = "#05008b", useHTML = TRUE)) %>%
+    
+    # hc_title(text = span( "High Risk Cases - NCDs", style="color:#e32c3e")
+    #           # style = list(fontWeight = "bold")
+    #          ) %>%
+    
+    
+    
+  hc_xAxis(type = "category",
+           title = list(text = "Block/GramPanchayat Name")
+           # JS('function(e) {chart.options.yAxis[0].title.text = "new title";  }')
+           
+  ) %>%
+    
+    hc_yAxis(title = list(text = "Percentage")) %>%
+    hc_legend(enabled = FALSE) %>%
+    hc_plotOptions(
+      series = list(
+        boderWidth = 0,
+        dataLabels = list(enabled = TRUE) 
+        # ,
+        # # colors = scale_color_brewer( ,type = "seq", palette = 1, direction = 1),
+        # colors = rev(colorRampPalette(brewer.pal(9,"Blues"))(nrow(block_df_ind)))
+        # events = list(click = canvasClickFunction)
+      )) %>%
+    
+    hc_add_series(
+      name = "Panchayat Samiti",
+      data = list_parse(block_df_ind),
+      color = "#2171b5"
+      # colorByPoint = TRUE
+    ) %>%
+    
+    hc_drilldown(
+      allowPointDrilldown = TRUE,
+      series = series_list_gp,
+      colorByPoint = TRUE
+    )
+  
+  
+})       
+  
+  
+output$reportedSAM <- renderHighchart({
+  
+  ###print("in PREG CHART")
+  df_ind <- getIndGS()
+  ind_name <- paste("mean","(","i",20,",","na.rm=TRUE",")",sep = "")
+  
+  ind_name_gs <- paste0("i",20)
+  summ_name <- paste0('mean_', "i",20)
+  
+  # FOR BLOCK LEVEL GRAPH
+  by_block <- 
+    df_ind %>% group_by(block_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  by_block <- by_block[complete.cases(by_block), ]
+  # ###print("by_BLOBCKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK")
+  # ###print(by_block)
+  colnames(by_block)<- c("name","y")
+  by_block$y <- as.integer(by_block$y )
+  
+  by_block$drilldown <- tolower(paste(substr(by_block$name,1,4),'id',sep = "_"))
+  block_df_ind <- as.data.frame(by_block)
+  ###print("BLOCK DF")
+  ###print(str(block_df_ind))
+  
+  # FOR GP LEVEL GRAPH
+  by_gp <- 
+    df_ind %>% group_by(block_parishad_name, gram_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  
+  by_gp <- by_gp[complete.cases(by_gp), ]
+  colnames(by_gp)<- c("block_parishad_name","gram_parishad_name","value")
+  by_gp$drilldown <- tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_")) 
+  by_gp$block <- tolower(paste(substr(by_gp$block_parishad_name,1,4),'id',sep = "_"))
+  gp_df_ind <- as.data.frame(by_gp)
+  
+  ###print("GP DF")
+  ###print(str(gp_df_ind))
+  
+  for (i in 1:nrow(block_df_ind))
+  {
+    # series_list_gp[[i]] <- "Hello"
+    # ###print(series_list_gp)
+    
+    series_list_gp[[i]] <- list( id = block_df_ind$drilldown[i],
+                                 name = "Gram Panchayat",
+                                 data = list_parse
+                                 (data_frame(
+                                   name = filter(gp_df_ind, block == block_df_ind$drilldown[i])$gram_parishad_name,
+                                   y = round(filter(gp_df_ind, block == block_df_ind$drilldown[i])$value,digits = 0))
+                                   # y = filter(gp_df_ind, block == block_df_ind$drilldown[i])$value )
+                                 )
+    )
+  }
+  
+  series_list_gp <- series_list_gp  
+  
+  
+  highchart() %>%
+    hc_chart(type = "column"
+             # ,
+             # events = list(
+             #   drilldown =
+             #     JS('function(e) {
+             # console.log(e.seriesOptions);
+             # this.setTitle({text: e.seriesOptions.name});
+             # } '))
+    ) %>%
+    
+    # hc_title(text = "Severely Malnourished Children (%)") %>%
+    # hc_title(text = "<b>High Risk Cases</b> - NCDs",
+    #          # # margin = 20,
+    #          # align = "centre",
+    #          style = list(color = "#05008b", useHTML = TRUE)) %>%
+    
+    # hc_title(text = span( "High Risk Cases - NCDs", style="color:#e32c3e")
+    #           # style = list(fontWeight = "bold")
+    #          ) %>%
+    
+    
+    
+  hc_xAxis(type = "category",
+           title = list(text = "Block/GramPanchayat Name")
+           # JS('function(e) {chart.options.yAxis[0].title.text = "new title";  }')
+           
+  ) %>%
+    
+    hc_yAxis(title = list(text = "Percentage")) %>%
+    hc_legend(enabled = FALSE) %>%
+    hc_plotOptions(
+      series = list(
+        boderWidth = 0,
+        dataLabels = list(enabled = TRUE) 
+        # ,
+        # # colors = scale_color_brewer( ,type = "seq", palette = 1, direction = 1),
+        # colors = rev(colorRampPalette(brewer.pal(9,"Blues"))(nrow(block_df_ind)))
+        # events = list(click = canvasClickFunction)
+      )) %>%
+    
+    hc_add_series(
+      name = "Panchayat Samiti",
+      data = list_parse(block_df_ind),
+      color = "#2171b5"
+      # colorByPoint = TRUE
+    ) %>%
+    
+    hc_drilldown(
+      allowPointDrilldown = TRUE,
+      series = series_list_gp,
+      colorByPoint = TRUE
+    )
+  
+  
+})       
+
+
+output$reportedOpenDefecated <- renderHighchart({
+  
+  ###print("in PREG CHART")
+  df_ind <- getIndGS()
+  ind_name <- paste("mean","(","i",33,",","na.rm=TRUE",")",sep = "")
+  
+  ind_name_gs <- paste0("i",33)
+  summ_name <- paste0('mean_', "i",33)
+  
+  # FOR BLOCK LEVEL GRAPH
+  by_block <- 
+    df_ind %>% group_by(block_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  by_block <- by_block[complete.cases(by_block), ]
+  # ###print("by_BLOBCKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK")
+  # ###print(by_block)
+  colnames(by_block)<- c("name","y")
+  by_block$y <- as.integer(by_block$y )
+  
+  by_block$drilldown <- tolower(paste(substr(by_block$name,1,4),'id',sep = "_"))
+  block_df_ind <- as.data.frame(by_block)
+  ###print("BLOCK DF")
+  ###print(str(block_df_ind))
+  
+  # FOR GP LEVEL GRAPH
+  by_gp <- 
+    df_ind %>% group_by(block_parishad_name, gram_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  
+  by_gp <- by_gp[complete.cases(by_gp), ]
+  colnames(by_gp)<- c("block_parishad_name","gram_parishad_name","value")
+  by_gp$drilldown <- tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_")) 
+  by_gp$block <- tolower(paste(substr(by_gp$block_parishad_name,1,4),'id',sep = "_"))
+  gp_df_ind <- as.data.frame(by_gp)
+  
+  ###print("GP DF")
+  ###print(str(gp_df_ind))
+  
+  for (i in 1:nrow(block_df_ind))
+  {
+    # series_list_gp[[i]] <- "Hello"
+    # ###print(series_list_gp)
+    
+    series_list_gp[[i]] <- list( id = block_df_ind$drilldown[i],
+                                 name = "Gram Panchayat",
+                                 data = list_parse
+                                 (data_frame(
+                                   name = filter(gp_df_ind, block == block_df_ind$drilldown[i])$gram_parishad_name,
+                                   y = round(filter(gp_df_ind, block == block_df_ind$drilldown[i])$value,digits = 0))
+                                   # y = filter(gp_df_ind, block == block_df_ind$drilldown[i])$value )
+                                 )
+    )
+  }
+  
+  series_list_gp <- series_list_gp  
+  
+  
+  highchart() %>%
+    hc_chart(type = "column"
+             # ,
+             # events = list(
+             #   drilldown =
+             #     JS('function(e) {
+             # console.log(e.seriesOptions);
+             # this.setTitle({text: e.seriesOptions.name});
+             # } '))
+    ) %>%
+    
+    # hc_title(text = "Households Defecated in Open Space (%)") %>%
+    # hc_title(text = "<b>High Risk Cases</b> - NCDs",
+    #          # # margin = 20,
+    #          # align = "centre",
+    #          style = list(color = "#05008b", useHTML = TRUE)) %>%
+    
+    # hc_title(text = span( "High Risk Cases - NCDs", style="color:#e32c3e")
+    #           # style = list(fontWeight = "bold")
+    #          ) %>%
+    
+    
+    
+  hc_xAxis(type = "category",
+           title = list(text = "Block/GramPanchayat Name")
+           # JS('function(e) {chart.options.yAxis[0].title.text = "new title";  }')
+           
+  ) %>%
+    
+    hc_yAxis(title = list(text = "Percentage")) %>%
+    hc_legend(enabled = FALSE) %>%
+    hc_plotOptions(
+      series = list(
+        boderWidth = 0,
+        dataLabels = list(enabled = TRUE) 
+        # ,
+        # # colors = scale_color_brewer( ,type = "seq", palette = 1, direction = 1),
+        # colors = rev(colorRampPalette(brewer.pal(9,"BuPu"))(nrow(block_df_ind)))
+        # events = list(click = canvasClickFunction)
+      )) %>%
+    
+    hc_add_series(
+      name = "Panchayat Samiti",
+      data = list_parse(block_df_ind),
+      # colorByPoint = TRUE
+      color = "#2171b5"
+    ) %>%
+    
+    hc_drilldown(
+      allowPointDrilldown = TRUE,
+      series = series_list_gp,
+      colorByPoint = TRUE
+    )
+  
+  
+})  
+  
+output$reportedExcretaToiletPan <- renderHighchart({
+  
+  ###print("in PREG CHART")
+  df_ind <- getIndGS()
+  ind_name <- paste("mean","(","i",34,",","na.rm=TRUE",")",sep = "")
+  
+  ind_name_gs <- paste0("i",34)
+  summ_name <- paste0('mean_', "i",34)
+  
+  # FOR BLOCK LEVEL GRAPH
+  by_block <- 
+    df_ind %>% group_by(block_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  by_block <- by_block[complete.cases(by_block), ]
+  # ###print("by_BLOBCKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK")
+  # ###print(by_block)
+  colnames(by_block)<- c("name","y")
+  by_block$y <- as.integer(by_block$y )
+  
+  by_block$drilldown <- tolower(paste(substr(by_block$name,1,4),'id',sep = "_"))
+  block_df_ind <- as.data.frame(by_block)
+  ###print("BLOCK DF")
+  ###print(str(block_df_ind))
+  
+  # FOR GP LEVEL GRAPH
+  by_gp <- 
+    df_ind %>% group_by(block_parishad_name, gram_parishad_name)%>% 
+    summarise_(.dots = setNames(ind_name, summ_name))
+  
+  by_gp <- by_gp[complete.cases(by_gp), ]
+  colnames(by_gp)<- c("block_parishad_name","gram_parishad_name","value")
+  by_gp$drilldown <- tolower(paste(substr(by_gp$gram_parishad_name,1,4),'id',sep = "_")) 
+  by_gp$block <- tolower(paste(substr(by_gp$block_parishad_name,1,4),'id',sep = "_"))
+  gp_df_ind <- as.data.frame(by_gp)
+  
+  ###print("GP DF")
+  ###print(str(gp_df_ind))
+  
+  for (i in 1:nrow(block_df_ind))
+  {
+    # series_list_gp[[i]] <- "Hello"
+    # ###print(series_list_gp)
+    
+    series_list_gp[[i]] <- list( id = block_df_ind$drilldown[i],
+                                 name = "Gram Panchayat",
+                                 data = list_parse
+                                 (data_frame(
+                                   name = filter(gp_df_ind, block == block_df_ind$drilldown[i])$gram_parishad_name,
+                                   y = round(filter(gp_df_ind, block == block_df_ind$drilldown[i])$value,digits = 0))
+                                   # y = filter(gp_df_ind, block == block_df_ind$drilldown[i])$value )
+                                 )
+    )
+  }
+  
+  series_list_gp <- series_list_gp  
+  
+  
+  highchart() %>%
+    hc_chart(type = "column"
+             # ,
+             # events = list(
+             #   drilldown =
+             #     JS('function(e) {
+             # console.log(e.seriesOptions);
+             # this.setTitle({text: e.seriesOptions.name});
+             # } '))
+    ) %>%
+    
+    # hc_title(text = "Households Excreta Not Disposed In Toilet (%)") %>%
+    # hc_title(text = "<b>High Risk Cases</b> - NCDs",
+    #          # # margin = 20,
+    #          # align = "centre",
+    #          style = list(color = "#05008b", useHTML = TRUE)) %>%
+    
+    # hc_title(text = span( "High Risk Cases - NCDs", style="color:#e32c3e")
+    #           # style = list(fontWeight = "bold")
+    #          ) %>%
+    
+    
+    
+  hc_xAxis(type = "category",
+           title = list(text = "Block/GramPanchayat Name")
+           # JS('function(e) {chart.options.yAxis[0].title.text = "new title";  }')
+           
+  ) %>%
+    
+    hc_yAxis(title = list(text = "Percentage")) %>%
+    hc_legend(enabled = FALSE) %>%
+    hc_plotOptions(
+      series = list(
+        boderWidth = 0,
+        dataLabels = list(enabled = TRUE) 
+        # ,
+        # # colors = scale_color_brewer( ,type = "seq", palette = 1, direction = 1),
+        # colors = rev(colorRampPalette(brewer.pal(9,"Blues"))(nrow(block_df_ind)))
+        # events = list(click = canvasClickFunction)
+      )) %>%
+    
+    hc_add_series(
+      name = "Panchayat Samiti",
+      data = list_parse(block_df_ind),
+      color = "#2171b5"
+      # colorByPoint = TRUE
+    ) %>%
+    
+    hc_drilldown(
+      allowPointDrilldown = TRUE,
+      series = series_list_gp,
+      colorByPoint = TRUE
+    )
+  
+  
+})  
+
+output$pieToilets <- renderHighchart({
+  
+  # ###print("PIE VALUES")
+  
+  ind_pie_toilet <- getIndVal() 
+  
+  df <- ind_pie_toilet[23:27,c(3,6)]
+  
+  # ###print("PIE DF VALUES")
+  
+  # print(df)
+ 
+  df_pie <- c(
+    rep("Squatting plate",as.integer(df$Value[1])),
+    rep("Single pit",as.integer(df$Value[2])),
+    rep("Double pit",as.integer(df$Value[3])),
+    rep("Dysfunctional",as.integer(df$Value[4]))
+    # rep("Data not available",as.integer(df$Value[5]))
+  )
+  ###print(df_pie)
+  
+  
+  hchart(df_pie,type = "pie", name = "Percentage Households")%>% 
+    # hc_add_theme(hc_theme_smpl())%>%
+    hc_legend(enabled = FALSE) %>%
+    # hc_title(text = paste0("Call Status (all Calls)",span(" (","N=",format(nrow(sci_dump_temp), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
+    #          style = list(fontWeight = "bold")) %>%
+    # hc_title(text = "Type of Toilets (all Blocks)") %>%
+    # hc_title(text = paste0("Type of Toilets (all Blocks)")
+    #          # ,
+    #          # style = list(fontWeight = "bold")
+    #          ) %>%
+    hc_plotOptions( pie = list(colors = brewer.pal(6,"Blues"),
+                               # type = "pie",
+                               name = "No. of Calls", 
+                               colorByPoint = TRUE,
+                               # center = c('55%', '50%'),
+                               size = 130, 
+                               dataLabels = list(enabled = TRUE,
+                                                 format = '{point.name}: ({point.percentage:.1f}%)'
+                                                 # {point.percentage:.1f}
+                               ))) %>% 
+    # hc_credits(enabled = TRUE,
+    #            text = "Source: SCI SDI Helpline data,2017-18",
+    #            href = "https://www.savethechildren.in/",
+    #            style = list(fontSize = "9px")) %>%
+    hc_exporting(enabled = TRUE)
+  
+  
+})  
+
+output$pieSLWMStatus <- renderHighchart({
+  
+  # ###print("PIE VALUES")
+  
+  ind_pie_toilet <- getIndVal() 
+  
+  df <- ind_pie_toilet[38:43,c(3,6)]
+  
+  
+  # print("PIE DF VALUES")
+  
+  # print(df)
+  
+  df_pie <- c(
+    rep("Garbage & Soak pit",as.integer(df$Value[1])),
+    rep("Only Garbage pit",as.integer(df$Value[2])),
+    rep("Only Soak pit",as.integer(df$Value[3])),
+    rep("Community collection",as.integer(df$Value[4])),
+    rep("No System ",as.integer(df$Value[5])),
+    rep("Data not available",as.integer(df$Value[6]))
+  )
+  ###print(df_pie)
+  
+  
+  hchart(df_pie,type = "pie", name = "Percentage Households")%>% 
+    # hc_add_theme(hc_theme_smpl())%>%
+    hc_legend(enabled = FALSE) %>%
+    # hc_title(text = paste0("Call Status (all Calls)",span(" (","N=",format(nrow(sci_dump_temp), nsmall=0, big.mark=","),")", style="color:#e32c3e")),
+    #          style = list(fontWeight = "bold")) %>%
+    # hc_title(text = "SLWM Status at Household Level (all Blocks)") %>%
+    # hc_title(text = paste0("Type of Toilets (all Blocks)")
+    #          # ,
+    #          # style = list(fontWeight = "bold")
+    #          ) %>%
+    hc_plotOptions( pie = list(colors = brewer.pal(6,"BuPu"),
+                               # type = "pie",
+                               name = "No. of Calls", 
+                               colorByPoint = TRUE,
+                               # center = c('50%', '50%'),
+                               size = 100, 
+                               dataLabels = list(enabled = TRUE,
+                                                 format = '{point.name}: ({point.percentage:.1f}%)'
+                                                 # {point.percentage:.1f}
+                               ))) %>% 
+    # hc_credits(enabled = TRUE,
+    #            text = "Source: SCI SDI Helpline data,2017-18",
+    #            href = "https://www.savethechildren.in/",
+    #            style = list(fontSize = "9px")) %>%
+    hc_exporting(enabled = TRUE)
+  
+  
+})  
+
+
   
   
 })

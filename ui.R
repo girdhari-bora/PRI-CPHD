@@ -88,11 +88,11 @@ getYear <- function() {
 
 #sidebar and related functions
 
-dbHeader <- dashboardHeader(title = "PRI Dashboard", titleWidth = 250,
+dbHeader <- dashboardHeader(title = "PERFORMANCE", titleWidth = 250,
                             tags$li(a(href = 'http://www.nadia.gov.in/',
-                                      img(src = 'CPHD.png',
-                                          title = "CPHD Website", height = "40px"),
-                                      style = "padding-top:5px; padding-bottom:3px;"),
+                                      img(src = 'LOGO.png',
+                                          title = "CPHD Website", height = "50px"),
+                                      style = "padding-top:0px; padding-bottom:0px;"),
                                     class = "dropdown"))
 
 sidebar <- dashboardSidebar(
@@ -105,20 +105,26 @@ sidebar <- dashboardSidebar(
                                  .selectize-dropdown .active {background: yellow !important;}"))
                  ),
                
-               selectizeInput("block_parishad", label = "Block Parishad", choices = choices_block , selected = choices_block[1],
-                           multiple=TRUE, options = list(placeholder = 'select Blocks...',
-                                                                         maxOptions = 100)
+               selectInput("block_parishad", label = "Panchayat Samiti", choices = choices_block 
+                           ,
+                           # selected = NULL,
+                           multiple=FALSE
+                           # , options = list(placeholder = 'select Blocks...',maxOptions = 100)
                 ),
                
-              selectizeInput("gram_panchayat", label = "Gram Panchayat", choices = NULL, selected = NULL,
-                           multiple=TRUE, options = list(placeholder = 'select Panchayats...',maxOptions = 100, maxItems = 100)
+              selectInput("gram_panchayat", label = "Gram Panchayat", choices = choices_panchayat, 
+                          # selected = NULL,
+                           multiple=FALSE
+                          # , options = list(placeholder = 'select Panchayats...',maxOptions = 100, maxItems = 100)
                 ),
                
-              selectizeInput("gram_sansad", label = "Gram Sansad", choices = NULL, selected = NULL,
-                           multiple=TRUE, options = list(placeholder = 'select Sansads...',maxOptions = 100, maxItems = 100)
+              selectInput("gram_sansad", label = "Gram Sansad", choices = choices_sansad, 
+                          # selected = NULL,
+                           multiple=FALSE
+                          # , options = list(placeholder = 'select Sansads...',maxOptions = 100, maxItems = 100)
                 ),
               
-               dateRangeMonthsInput('monthRange',
+              dateRangeMonthsInput('monthRange',
                              label = "Period (select months)",
                              start = min(as.Date(get_data_df_final$year_month_date)),
                              end = max(as.Date(get_data_df_final$year_month_date)),
@@ -128,16 +134,6 @@ sidebar <- dashboardSidebar(
                              startview = "month", minviewmode="months", language = 'en', weekstart = 0, width = NULL
                         )
               
-                # br(),
-                # # menuItem("Referral Tree", tabName = "referralTree", icon = icon("user-md")),
-                # 
-                # menuItem("Daily Call Records", tabName = "dailyCalls", icon = icon("table")),
-                # br(),
-                # 
-                # menuItem("Key Indicators (all cases)", tabName = "indicators", icon = icon("line-chart")),
-                # br(),
-                # menuItem("Diarrhoea Referral Cases", tabName = "referral", icon = icon("medkit")),
-                # br()
                
               ),
   
@@ -152,26 +148,132 @@ sidebar <- dashboardSidebar(
 body <- dashboardBody ( 
  
   tags$head(tags$link(rel = "icon", href = "./www/favicon.ico?v=1.1")),
+  # tags$head(tags$style(HTML('
+  # 
+  #                       .modal-lg {
+  #                       width: 1800px;
+  #                       height: 1000px;}
+  #                       .the-modal .modal-content{ display: flex; flex-direction: column; 
+  # 
+  #                       }
+  #                     '))),
   
  
-  tabsetPanel(
+  tags$head(tags$style(HTML('
+        /* logo */
+        .skin-blue .main-header .logo {
+                              background-color: #0392cf;
+                              }
+
+        /* logo when hovered */
+        .skin-blue .main-header .logo:hover {
+                              background-color: #f4b943;
+                              }
+
+        /* navbar (rest of the header) */
+        .skin-blue .main-header .navbar {
+                              background-color: #000000;
+                              }        
+
+        /* main sidebar */
+        .skin-blue .main-sidebar {
+                              background-color: #000000;
+                              }
+
+        /* active selected tab in the sidebarmenu */
+        .skin-blue .main-sidebar .sidebar .sidebar-menu .active a{
+                              background-color: #ff0000;
+                              }
+/* other links in the sidebarmenu */
+        .skin-blue .main-sidebar .sidebar .sidebar-menu a{
+                              background-color: #00ff00;
+                              color: #000000;
+                              }
+
+        /* other links in the sidebarmenu when hovered */
+         .skin-blue .main-sidebar .sidebar .sidebar-menu a:hover{
+                              background-color: #ff69b4;
+                              }
+        /* toggle button when hovered  */                    
+         .skin-blue .main-header .navbar .sidebar-toggle:hover{
+                              background-color: #ff69b4;
+                              }
+                              '))),
+
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  tabsetPanel( 
+    # id = "tabs",
     
+             
     
-    tabPanel( "Health and Family Welfare",
-              DT::dataTableOutput("health_family_welfare")
+    tabPanel( 
+            # "All Indicators",
+             "Health and Family Welfare", 
+             value = 1,
+              DT::dataTableOutput("health_family_welfare"),uiOutput("popup")
               # DT::dataTableOutput('sc_tbl'),
               # span("Number of movies selected:",
               #      textOutput("n_movies")
-    ),
-    tabPanel("Child Development",
-             DT::dataTableOutput("child_development")
+    )
+    ,
+    tabPanel("Child Development", value =2,
+             DT::dataTableOutput("child_development"),uiOutput("popup1")
              # DT::dataTableOutput('sc_tbl'),
              # span("Number of movies selected:",
              #      textOutput("n_movies")
     ),
+
+    tabPanel( "Panchayat and Rural Development", value =3,
+              DT::dataTableOutput("panchayat_rural_development"),uiOutput("popup2")
+              # DT::dataTableOutput('sc_tbl'),
+              # span("Number of movies selected:"
+              #      textOutput("n_movies")
+    ),
     
-    tabPanel( "Panchayat and Rural Development",
-              DT::dataTableOutput("panchayat_rural_development")
+    tabPanel( "Graphs: Key Indicators",
+              value = 4,
+              fluidRow(
+                box(highchartOutput("under18Preg", width = "100%", height = "350px"), width = 6,collapsible = TRUE,
+                    status = "primary",solidHeader = TRUE,title = "Under-18 Pregnancies (%)"),
+                box(highchartOutput("homeDelivery", width = "100%", height = "350px"), width = 6,collapsible = TRUE,
+                    status = "primary",solidHeader = TRUE,title = "Home Deliveries of Total Deliveries (%)"),
+                box(highchartOutput("completeImmunization", width = "100%", height = "350px"), width = 6,collapsible = TRUE,
+                    status = "primary",solidHeader = TRUE,title = "Complete Immunization within 12 months (%)"),
+                box(highchartOutput("reportedDiaChol", width = "100%", height = "350px"), width = 6,collapsible = TRUE,
+                    status = "primary",solidHeader = TRUE,title = "Population reported for Diarrhoea/Cholera (%)"),
+                box(highchartOutput("reportedUknownFever", width = "100%", height = "350px"), width = 6,collapsible = TRUE,
+                    status = "primary",solidHeader = TRUE,title = "Population reported for Unknown Fever (%)"),
+                box(highchartOutput("reportedLBW", width = "100%", height = "350px"), width = 6,collapsible = TRUE,
+                    status = "primary",solidHeader = TRUE,title = "Low Birth Weight (%)"),
+                box(highchartOutput("reportedSAM", width = "100%", height = "350px"), width = 6,collapsible = TRUE,
+                    status = "primary",solidHeader = TRUE,title = "Severely Malnourished Children (%)"),
+                box(highchartOutput("pieToilets", width = "100%", height = "350px"), width = 6,collapsible = TRUE,
+                    status = "primary",solidHeader = TRUE,title = "Type of Toilets (all Blocks)"),
+                box(highchartOutput("reportedOpenDefecated", width = "100%", height = "350px"), width = 6,collapsible = TRUE,
+                    status = "primary",solidHeader = TRUE,title = "Households Defecated in Open Space (%)"),
+                box(highchartOutput("reportedExcretaToiletPan", width = "100%", height = "350px"), width = 6,collapsible = TRUE,
+                    status = "primary",solidHeader = TRUE,title = "Households Excreta Not Disposed In Toilet (%)"),
+                box(highchartOutput("pieSLWMStatus", width = "100%", height = "350px"), width = 6,collapsible = TRUE,
+                    status = "primary",solidHeader = TRUE,title = "SLWM Status at Household Level (all Blocks)")
+                
+              )
+              # highchartOutput("health_family_welfare",)
+              # ,uiOutput("popup")
               # DT::dataTableOutput('sc_tbl'),
               # span("Number of movies selected:",
               #      textOutput("n_movies")

@@ -1,7 +1,7 @@
 # install.packages("httr")
 # install.packages("jsonlite")
 
-#Require the package so you can use it
+#Require the package  so you can use it
 require("httr")
 require("jsonlite")
 library(httr)
@@ -9,13 +9,10 @@ library(rdrop2)
 library(dplyr)
 
 
-token <- readRDS("./Data/droptoken.rds")
-
-get_data_df <- drop_read_csv("CPHD/get_data_df.csv", dtoken = token)
-
-get_data_df %>% mutate_if(is.factor, as.character) -> get_data_df
-
-unique(get_data_df$gram_sansad_name)
+# token <- readRDS("./Data/droptoken.rds")
+# get_data_df <- drop_read_csv("CPHD/get_data_df.csv", dtoken = token)
+# get_data_df %>% mutate_if(is.factor, as.character) -> get_data_df
+# unique(get_data_df$gram_sansad_name)
 
 
 set_config( config( ssl_verifypeer = 0L ))
@@ -23,13 +20,16 @@ get_data <- GET("https://spreadcreativity.org/master_pri/master_pri_data.php")
 get_data_text <- content(get_data, "text")
 get_data_json <- fromJSON(get_data_text, flatten = TRUE)
 get_data_df_new <- as.data.frame(get_data_json[["indicatordata"]])
+get_data_df_new[,8:59] <- sapply(get_data_df_new[,8:59],as.integer)
 
-if (nrow(get_data_df_new) > nrow(get_data_df))
-  {
-    drop_delete("get_data_df.csv", path = "CPHD", dtoken = token)
-    drop_upload("get_data_df.csv", path = "CPHD", dtoken = token)
-    get_data_df <- get_data_df_new
-  }
+get_data_df <- get_data_df_new
+
+# if (nrow(get_data_df_new) > nrow(get_data_df))
+#   {
+#     drop_delete("get_data_df.csv", path = "CPHD", dtoken = token)
+#     drop_upload("get_data_df.csv", path = "CPHD", dtoken = token)
+#     get_data_df <- get_data_df_new
+#   }
 
 get_data_df_final <- get_data_df %>% 
   mutate(year_month_date = paste(matrix(unlist(strsplit(get_data_df$year, "-")),ncol=2, byrow = TRUE)[,1],
@@ -174,5 +174,63 @@ max(as.Date(year_month1$year_month_date))
     Indicators_PRI$value[52] <- round(mean((get_data_df$i52_add/denominator_45_to_52)*100, na.rm = TRUE),digits = 0)
     
 
-
+    summarise_vars <- list(list('cyl', 'mpg'), list('vs', 'disp'))
+    str(summarise_vars[2])
+    
+    
+    ind_name <- paste("i",4,sep = "")
+    
+    by_block <- 
+      get_data_df_gs_ind %>% group_by(block_parishad_name)%>% 
+      summarise(block_ind_val = round(mean(i2,na.rm = TRUE),digits = 0))
+    
+    a <- select(get_data_df_gs_ind, block_parishad_name,gram_parishad_name,gram_sansad_name,"i2")
+    
+    round(mean(filter(a,block_parishad_name == "HARINGHATA")$i2,na.rm = TRUE),digits = 0)
+    round(mean(filter(a,block_parishad_name == "TEHATTA 2")$i2,na.rm = TRUE),digits = 0)
+    round(mean(filter(a,block_parishad_name == "KRISHNAGAR 1")$i2,na.rm = TRUE),digits = 0)
+    round(mean(filter(a,block_parishad_name == "BARUIPUR")$i2,na.rm = TRUE), digits = 0)
+    
+    
+    
+    
+    df_summ <- mtcars %>%
+      group_by_(.dots = group_var) %>%
+      summarise_(.dots = setNames(summ, summ_name))
+    
+    summ <- summ <- paste0('mean(',  ind_name,')')
+    summ
+    summ_name <- paste0('mean_', ind_name)
+    summ_name
+    
+    by_block1 <- 
+      get_data_df_gs_ind %>% group_by(block_parishad_name, gram_parishad_name)%>% 
+      summarise_(.dots = setNames("round(mean(i2, na.rm=TRUE),digits=0)", summ_name))
+    by_block1 <- by_block1[complete.cases(by_block1), ]
+    
+    a <- select(get_data_df_gs_ind, block_parishad_name,gram_parishad_name,gram_sansad_name,"i2")
+    
+    round(mean(filter(a,block_parishad_name == "BARUIPUR",gram_parishad_name == "Dhap Dhapi II")$i2,na.rm = TRUE),digits = 0)
+    round(mean(filter(a,block_parishad_name == "TEHATTA 2")$i2,na.rm = TRUE),digits = 0)
+    round(mean(filter(a,block_parishad_name == "KRISHNAGAR 1")$i2,na.rm = TRUE),digits = 0)
+    round(mean(filter(a,block_parishad_name == "BARUIPUR")$i2,na.rm = TRUE), digits = 0)
+    
+    
+    
+    
+    a <- data.frame()
+    a <- by_block1
+    
+    mean(get_data_df_gs_ind$i2, na.rm = TRUE)
+    get_data_df_gs_ind$i1/get_data_df_gs_ind$i2
+    
+    
+    blocksdf = data_frame(name = block_df_ind$block,
+                          y = block_df_ind$ind_value,
+                          drilldown = tolower(paste(name,'id')))
+    
+    which(colnames(get_data_df)== ind_name)
+    
+    colnames(get_data_df)[11]
+    
   

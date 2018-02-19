@@ -22,10 +22,10 @@ library(dplyr)
 
 #change in global
 
-  
-  token <- readRDS("./Data/droptoken.rds")
-  get_data_df <- drop_read_csv("CPHD/get_data_df.csv", dtoken = token)
-  get_data_df %>% mutate_if(is.factor, as.character) -> get_data_df
+
+  # token <- readRDS("./Data/droptoken.rds")
+  # get_data_df <- drop_read_csv("CPHD/get_data_df.csv", dtoken = token)
+  # get_data_df %>% mutate_if(is.factor, as.character) -> get_data_df
   # unique(get_data_df$gram_sansad_name)
 
 
@@ -34,27 +34,35 @@ library(dplyr)
   get_data_text <- content(get_data, "text")
   get_data_json <- fromJSON(get_data_text, flatten = TRUE)
   get_data_df_new <- as.data.frame(get_data_json[["indicatordata"]])
-
-
-# tryCatch({
-
-if (nrow(get_data_df_new) > nrow(get_data_df))
-{
-  # print("hello I am here1")
-  tryCatch({
-  drop_delete("get_data_df.csv", path = "CPHD", dtoken = token)
-  }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-  # write.csv(data, fileName, row.names = TRUE, quote = TRUE)
+  get_data_df_new %>% mutate_if(is.factor, as.character) -> get_data_df
   
-  write.csv(get_data_df_new, "get_data_df.csv")
-  drop_upload("get_data_df.csv", path = "CPHD", dtoken = token)
   
+  
+
+ # tryCatch({
+ # 
+ # if (nrow(get_data_df_new) > nrow(get_data_df))
+ # {
+ #   # print("hello I am here1")
+ #   tryCatch({
+ #   drop_delete("get_data_df.csv", path = "CPHD", dtoken = token)
+ #   }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+ #   # write.csv(data, fileName, row.names = TRUE, quote = TRUE)
+ # 
+ # write.csv(get_data_df_new, "get_data_df.csv")
+ #   drop_upload("get_data_df.csv", path = "CPHD", dtoken = token)
+
   get_data_df <- get_data_df_new
-  
-  print("hello I am here2")  
-}
 
-# }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")}) 
+  get_data_df <- filter(get_data_df, get_data_df$block_parishad_name != "Test Block 1", 
+                        get_data_df$block_parishad_name != "Test Block 2" )
+  
+  get_data_df_new <- get_data_df
+  
+ #   print("hello I am here2")  
+ # }
+
+ # }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")}) 
 
 
 # get_data_df <- read.csv("./Data/get_data_df.csv", 
@@ -62,18 +70,38 @@ if (nrow(get_data_df_new) > nrow(get_data_df))
 indicators_master <- read.csv("./Data/Indicators PRI.csv", 
                         header = TRUE, stringsAsFactors = FALSE ,check.names = TRUE)
 
-choices_block <- c(unique(get_data_df$block_parishad_name))
+choices_block <- c("Select All",unique(get_data_df$block_parishad_name))
 choices_panchayat <- c("Select All", unique(get_data_df$gram_parishad_name))
 choices_sansad <- c("Select All", unique(get_data_df$gram_sansad_name))
 
+
+
+get_data_df$month <- as.integer(get_data_df$month)
+
+
 get_data_df_final <- get_data_df %>% 
-  mutate(year_month_date = ifelse( month >3 , paste(matrix(unlist(strsplit(get_data_df$year, "-")),ncol=2, byrow = TRUE)[,1],
+  mutate(year_month_date = ifelse( month>3 , paste(matrix(unlist(strsplit(get_data_df$year, "-")),ncol=2, byrow = TRUE)[,1],
                                                     month,"01",sep = "-")
                                    , paste(as.integer(matrix(unlist(strsplit(get_data_df$year, "-")),ncol=2, byrow = TRUE)[,1])+1,
                                            month,"01",sep = "-"))
   )
 
-max(get_data_df_final$year_month_date)
+series_list_gp <<- vector("list",0)
+series_list_gs <<- vector("list",0)
+
+# max(get_data_df_final$year_month_date)
+
+
+
+# block_df_ind <<- data.frame() 
+#   # setNames(data.frame(matrix(ncol = 2, nrow = 0)), c("block", "ind_value"))
+# gp_df_ind <<- data.frame() 
+# # <- setNames(data.frame(matrix(ncol = 2, nrow = 0)), c("gp", "ind_value"))
+# gs_df_ind <<- data.frame() 
+# # <- setNames(data.frame(matrix(ncol = 2, nrow = 0)), c("gs", "ind_value"))
+
+
+
 
 
 
